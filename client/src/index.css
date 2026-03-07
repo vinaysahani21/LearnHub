@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --border: 214 32% 91%;
+    --primary: 243 75% 59%;
+    --secondary: 160 84% 39%;
+  }
+
+  .dark {
+    --background: 222 47% 11%; /* Slate 950 */
+    --foreground: 210 40% 98%; /* Slate 50 */
+    --card: 217 33% 17%;       /* Slate 800 */
+    --border: 215 25% 27%;     /* Slate 700 */
+    --primary: 239 84% 67%;    /* Indigo 500 */
+    --secondary: 158 64% 52%;  /* Emerald 400 */
+  }
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 transition-colors duration-300;
+}
+
+.dark body {
+  @apply bg-[#0F172A] text-slate-50;
+}

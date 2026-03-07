@@ -1,0 +1,34 @@
+# ========================
+# Node & Backend (Server)
+# ========================
+
+**/node_modules/
+node_modules/
+npm-debug.log
+yarn-error.log
+server/.env
+
+# Ignore uploaded media/files (Don't push heavy videos/images to Git)
+server/uploads/
+server/public/uploads/
+
+# ========================
+# React & Frontend (Client)
+# ========================
+client/node_modules/
+client/build/
+client/dist/
+client/.env
+client/.env.local
+client/.env.development.local
+client/.env.test.local
+client/.env.production.local
+
+# ========================
+# OS & Editor Files
+# ========================
+.DS_Store
+.vscode/
+.idea/
+*.suo
+*.log
