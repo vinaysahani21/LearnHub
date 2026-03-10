@@ -1,4 +1,4 @@
-LEARNHUB - E-LEARNING PLATFORM
+#LEARNHUB - E-LEARNING PLATFORM
 
 A comprehensive, full-stack e-learning platform designed to bridge the gap between educators and learners. LearnHub features dedicated portals for Students, Tutors, and Administrators, offering a seamless experience for course creation, video streaming, interactive quizzes, and real-time progress tracking.
 
