@@ -195,4 +195,34 @@ router.post('/:id/lessons/:lessonId/comments', protect, async (req, res) => {
   }
 });
 
+router.delete('/:id/lessons/:lessonId', protect, tutorOnly, async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    // Security Check: Only the owner can delete lessons
+    if (course.tutor.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to modify this course' });
+    }
+
+    // Filter out the lesson to be deleted
+    const initialLength = course.lessons.length;
+    course.lessons = course.lessons.filter(
+      (lesson) => lesson._id.toString() !== req.params.lessonId
+    );
+
+    if (course.lessons.length === initialLength) {
+      return res.status(404).json({ message: 'Lesson not found' });
+    }
+
+    await course.save();
+    res.json({ message: 'Lesson deleted successfully', lessons: course.lessons });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 module.exports = router;

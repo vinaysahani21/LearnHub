@@ -2,16 +2,13 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { 
-  Loader2, ArrowLeft, Plus, Settings, Video, ListChecks, 
+  ArrowLeft, Plus, Settings, Video, ListChecks, 
   Trash2, Edit2, Users, BookOpen, IndianRupee, AlertCircle,
-  Eye, Power, MessageSquare, X, Send, RefreshCw
+  Eye, Power, MessageSquare, X, Send, RefreshCw, GripVertical
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext.jsx';
 
 const CourseManager = () => {
   const { id } = useParams();
-  const { user } = useAuth();
-  
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ students: 0, earnings: 0 });
@@ -20,9 +17,7 @@ const CourseManager = () => {
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [comments, setComments] = useState([]);
   const [loadingComments, setLoadingComments] = useState(false);
-  const [replyText, setReplyText] = useState('');
 
-  // 1. Fetch Data
   const fetchCourseData = async () => {
     try {
       setLoading(true);
@@ -32,13 +27,11 @@ const CourseManager = () => {
       const res = await axios.get(`http://localhost:5000/api/courses/${id}`, config);
       setCourse(res.data);
       
-      // Calculate Stats dynamically based on the FIXED backend
       const studentCount = res.data.enrolledStudents?.length || 0;
       setStats({
         students: studentCount,
         earnings: studentCount * (res.data.price || 0)
       });
-
     } catch (err) {
       console.error(err);
     } finally {
@@ -50,17 +43,48 @@ const CourseManager = () => {
     fetchCourseData();
   }, [id]);
 
-  // 2. Fetch Comments (On Demand)
+  // TOGGLE STATUS (Draft vs Published)
+  const handleToggleStatus = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      // Hitting the toggle endpoint
+      const res = await axios.patch(`http://localhost:5000/api/courses/${id}/status`, {}, config);
+      setCourse({ ...course, isActive: res.data.isActive });
+    } catch (err) {
+      alert("Failed to update status. Please try again.");
+    }
+  };
+
+  // DELETE LESSON (Actually hits DB)
+  const handleDeleteLesson = async (lessonId, lessonTitle) => {
+    if (!window.confirm(`⚠️ Are you sure you want to delete "${lessonTitle}"? This cannot be undone.`)) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      
+      await axios.delete(`http://localhost:5000/api/courses/${id}/lessons/${lessonId}`, config);
+      
+      // Update UI optimistically
+      const updatedLessons = course.lessons.filter(l => l._id !== lessonId);
+      setCourse({ ...course, lessons: updatedLessons });
+    } catch (err) {
+      alert("Failed to delete lesson.");
+      console.error(err);
+    }
+  };
+
   const fetchComments = async () => {
     setIsCommentsOpen(true);
     try {
       setLoadingComments(true);
       const token = localStorage.getItem('token');
-      // Assuming you have a route to get ALL comments for a course
-      // If not, you might need to loop lessons or create a specific endpoint
-      // For now, let's assume we fetch for the first lesson or a general endpoint
       const targetLessonId = course.lessons[0]?._id; 
-      if(!targetLessonId) return;
+      if(!targetLessonId) {
+        setLoadingComments(false);
+        return;
+      }
 
       const res = await axios.get(`http://localhost:5000/api/courses/${id}/lessons/${targetLessonId}/comments`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -73,143 +97,137 @@ const CourseManager = () => {
     }
   };
 
-  // 3. Toggle Status
-  const handleToggleStatus = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      const res = await axios.patch(`http://localhost:5000/api/courses/${id}/status`, {}, config);
-      setCourse({ ...course, isActive: res.data.isActive });
-    } catch (err) {
-      alert("Failed to update status");
-    }
-  };
+  // Signature Red Pulse Loader
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[70vh] gap-4">
+        <div className="relative flex h-10 w-10">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-10 w-10 bg-red-500"></span>
+        </div>
+        <p className="font-bold text-slate-400 animate-pulse tracking-widest uppercase text-xs">Loading Workspace...</p>
+      </div>
+    );
+  }
 
-  // 4. Delete Lesson
-  const handleDeleteLesson = async (lessonId) => {
-    if (!confirm("Delete this lesson?")) return;
-    const updatedLessons = course.lessons.filter(l => l._id !== lessonId);
-    setCourse({ ...course, lessons: updatedLessons });
-    // Add API call here
-  };
-
-  if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-indigo-500" /></div>;
-  if (!course) return <div className="flex flex-col items-center justify-center p-20"><AlertCircle className="w-10 h-10 text-red-500 mb-2"/><p>Course not found</p></div>;
+  if (!course) return <div className="flex flex-col items-center justify-center p-20 text-slate-500 font-bold"><AlertCircle className="w-10 h-10 text-red-500 mb-2"/> Course not found.</div>;
 
   return (
-    <div className="max-w-6xl mx-auto p-6 transition-colors duration-300 relative">
+    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500 relative">
       
-      {/* 1. HEADER SECTION */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      {/* 1. STUDIO HEADER */}
+      <div className="bg-white p-6 rounded-3xl border border-slate-200/60 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         
         {/* Left Side */}
-        <div>
-          <Link to="/tutor/my-courses" className="flex items-center text-sm font-bold text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 mb-2 transition-colors">
-            <ArrowLeft size={16} className="mr-1" /> Back to My Content
+        <div className="flex-1 w-full">
+          <Link to="/tutor/my-courses" className="inline-flex items-center text-xs font-black text-slate-400 hover:text-indigo-600 uppercase tracking-widest mb-4 transition-colors group">
+            <ArrowLeft size={14} className="mr-2 group-hover:-translate-x-1 transition-transform" /> Back to Library
           </Link>
-          <div className="flex items-center gap-4">
-            <img src={course.thumbnail} className="w-20 h-14 object-cover rounded-lg shadow-sm border border-gray-200 dark:border-slate-700" alt="Thumbnail" />
+          <div className="flex items-center gap-5">
+            <img src={course.thumbnail} className="w-24 h-16 object-cover rounded-xl shadow-md border border-slate-100" alt="Thumbnail" />
             <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400">
+              <div className="flex items-center gap-3 mb-1.5">
+                <span className="px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest bg-slate-100 text-slate-500 border border-slate-200">
                   {course.category}
                 </span>
                 {course.isActive ? (
-                  <span className="flex items-center gap-1 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-600 animate-pulse"></span> Published
+                  <span className="flex items-center gap-1.5 bg-emerald-50 text-emerald-600 border border-emerald-200 text-[9px] font-black px-2.5 py-1 rounded-md uppercase tracking-widest shadow-sm">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Published
                   </span>
                 ) : (
-                  <span className="bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-400 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
-                    Draft
+                  <span className="flex items-center gap-1.5 bg-slate-50 text-slate-500 border border-slate-200 text-[9px] font-black px-2.5 py-1 rounded-md uppercase tracking-widest shadow-sm">
+                    Draft Mode
                   </span>
                 )}
               </div>
-              <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{course.title}</h1>
+              <h1 className="text-2xl font-black text-slate-900 tracking-tight line-clamp-1">{course.title}</h1>
             </div>
           </div>
         </div>
 
-        {/* Right Side: ACTION BUTTONS */}
-        <div className="flex items-center gap-2">
+        {/* Right Side: ACTION CONTROLS */}
+        <div className="flex items-center gap-2 w-full md:w-auto bg-slate-50 p-2 rounded-2xl border border-slate-100">
           
-          <button onClick={fetchCourseData} className="p-2.5 rounded-lg border border-gray-200 dark:border-slate-700 text-gray-500 hover:text-indigo-600 dark:hover:text-white transition-all" title="Refresh Data">
-            <RefreshCw size={20} />
+          <button onClick={fetchCourseData} className="p-2.5 rounded-xl text-slate-400 hover:bg-white hover:text-indigo-600 hover:shadow-sm transition-all" title="Refresh Sync">
+            <RefreshCw size={18} />
+          </button>
+          {/* CHANGE THIS */}
+<Link to={`/tutor/course/${course._id}/preview`} className="p-2.5 rounded-xl text-slate-400 hover:bg-white hover:text-indigo-600 hover:shadow-sm transition-all" title="Student Preview">
+  <Eye size={18} />
+</Link>
+          <button onClick={fetchComments} className="p-2.5 rounded-xl text-slate-400 hover:bg-white hover:text-indigo-600 hover:shadow-sm transition-all" title="Q&A Forum">
+            <MessageSquare size={18} />
+          </button>
+          
+          <div className="h-6 w-px bg-slate-200 mx-1"></div>
+
+          <button 
+            onClick={handleToggleStatus} 
+            className={`p-2.5 rounded-xl transition-all shadow-sm flex items-center gap-2 text-xs font-black uppercase tracking-wider ${course.isActive ? 'bg-white text-orange-600 border border-orange-200 hover:bg-orange-500 hover:text-white' : 'bg-white text-emerald-600 border border-emerald-200 hover:bg-emerald-500 hover:text-white'}`}
+          >
+            <Power size={16} /> {course.isActive ? "Unpublish" : "Publish"}
           </button>
 
-          <Link to={`/student/course/${course._id}/view`} target="_blank" className="p-2.5 rounded-lg border border-gray-200 dark:border-slate-700 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white transition-all" title="Preview Course">
-            <Eye size={20} />
-          </Link>
-
-          <button onClick={fetchComments} className="p-2.5 rounded-lg border border-gray-200 dark:border-slate-700 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white transition-all" title="View Comments">
-            <MessageSquare size={20} />
-          </button>
-
-          <button className="p-2.5 rounded-lg border border-gray-200 dark:border-slate-700 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white transition-all" title="Edit Settings">
-            <Settings size={20} />
-          </button>
-
-          <div className="h-8 w-px bg-gray-200 dark:bg-slate-700 mx-1"></div>
-
-          <button onClick={handleToggleStatus} className={`p-2.5 rounded-lg border transition-all ${course.isActive ? 'border-green-200 dark:border-green-900 text-green-600 bg-green-50 dark:bg-green-900/10 hover:bg-red-50 hover:text-red-600 hover:border-red-200' : 'border-gray-200 dark:border-slate-700 text-gray-400 hover:text-green-600 hover:border-green-200 hover:bg-green-50'}`} title={course.isActive ? "Deactivate" : "Activate"}>
-            <Power size={20} />
-          </button>
-
-          <Link to={`/tutor/course/${course._id}/add-lesson`} className="ml-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg font-bold flex items-center gap-2 shadow-lg shadow-indigo-500/20 transition-all">
-            <Plus size={18} /> Add Lesson
+          <Link to={`/tutor/course/${course._id}/add-lesson`} className="ml-1 px-5 py-2.5 bg-[#0a0f1c] hover:bg-slate-800 text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-slate-900/10 transition-all active:scale-95">
+            <Plus size={16} /> Module
           </Link>
         </div>
       </div>
 
-      {/* 2. STATS CARDS */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-        <StatCard icon={<IndianRupee size={20} />} label="Price" value={`₹${course.price}`} color="green" />
-        <StatCard icon={<Users size={20} />} label="Students" value={stats.students} color="blue" />
-        <StatCard icon={<BookOpen size={20} />} label="Lessons" value={course.lessons?.length || 0} color="purple" />
-        <StatCard icon={<IndianRupee size={20} />} label="Total Earnings" value={`₹${stats.earnings}`} color="yellow" />
+      {/* 2. LIVE METRICS */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatWidget icon={<IndianRupee size={20} />} label="Set Price" value={`₹${course.price}`} color="green" />
+        <StatWidget icon={<Users size={20} />} label="Enrollments" value={stats.students} color="blue" />
+        <StatWidget icon={<BookOpen size={20} />} label="Total Modules" value={course.lessons?.length || 0} color="purple" />
+        <StatWidget icon={<IndianRupee size={20} />} label="Gross Earnings" value={`₹${stats.earnings}`} color="orange" />
       </div>
 
-      {/* 3. CURRICULUM LIST */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm overflow-hidden transition-all mt-8">
-        <div className="p-6 border-b border-gray-200 dark:border-slate-800 flex justify-between items-center bg-gray-50 dark:bg-slate-900/50">
+      {/* 3. CURRICULUM BUILDER */}
+      <div className="bg-white rounded-3xl border border-slate-200/60 shadow-xl shadow-slate-200/10 overflow-hidden">
+        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
           <div>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Curriculum</h2>
-            <p className="text-sm text-gray-500 dark:text-slate-400">Manage your lessons and quizzes</p>
+            <h2 className="text-xl font-black text-slate-900 tracking-tight">Curriculum Planner</h2>
+            <p className="text-sm text-slate-500 font-medium">Build, arrange, and manage course content.</p>
           </div>
-          <span className="text-xs text-gray-400 font-mono hidden sm:block">Drag to reorder (Coming soon)</span>
         </div>
 
-        <div className="divide-y divide-gray-100 dark:divide-slate-800">
+        <div className="divide-y divide-slate-100 p-4">
           {course.lessons?.length === 0 ? (
-            <div className="p-16 text-center">
-              <div className="bg-gray-100 dark:bg-slate-800 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400 dark:text-gray-500"><Video size={32}/></div>
-              <p className="text-gray-500 dark:text-gray-400 mb-4">No lessons added yet.</p>
-              <Link to={`/tutor/course/${course._id}/add-lesson`} className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline">
-                Upload your first video
+            <div className="p-16 text-center border-2 border-dashed border-slate-200 rounded-2xl m-4">
+              <div className="bg-slate-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100 shadow-sm text-slate-300"><Video size={28}/></div>
+              <p className="text-slate-500 font-bold mb-4">No content has been uploaded yet.</p>
+              <Link to={`/tutor/course/${course._id}/add-lesson`} className="text-indigo-600 font-black uppercase tracking-widest text-xs hover:text-indigo-800 transition-colors flex items-center justify-center gap-2">
+                <Plus size={14}/> Add First Module
               </Link>
             </div>
           ) : (
             course.lessons?.map((lesson, index) => (
-              <div key={lesson._id || index} className="p-4 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors group">
-                <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold flex items-center justify-center shrink-0 text-sm">{index + 1}</div>
+              <div key={lesson._id || index} className="p-4 flex items-center gap-4 bg-white hover:bg-slate-50 rounded-2xl border border-transparent hover:border-slate-200 transition-all group mb-2">
+                <div className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500">
+                   <GripVertical size={20} />
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 font-black flex items-center justify-center shrink-0 text-sm shadow-inner border border-slate-200/60">
+                  {index + 1}
+                </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-gray-900 dark:text-white truncate">{lesson.title}</h4>
-                  <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-500 dark:text-slate-400">
+                  <h4 className="font-bold text-slate-900 truncate">{lesson.title}</h4>
+                  <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-500 font-bold">
                     {lesson.type === 'quiz' ? (
                       <>
-                        <span className="flex items-center gap-1 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-2 py-0.5 rounded font-bold uppercase tracking-wider text-[10px]"><ListChecks size={10} /> Quiz</span>
-                        <span>• {lesson.questions?.length || 0} Questions</span>
+                        <span className="flex items-center gap-1.5 text-orange-600 bg-orange-50 px-2 py-0.5 rounded border border-orange-100 uppercase tracking-widest text-[9px]"><ListChecks size={12} /> Assessment</span>
+                        <span>{lesson.questions?.length || 0} Questions</span>
                       </>
                     ) : (
                       <>
-                        <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded font-bold uppercase tracking-wider text-[10px]"><Video size={10} /> Video</span>
-                        <span>• 10:00 mins</span>
+                        <span className="flex items-center gap-1.5 text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 uppercase tracking-widest text-[9px]"><Video size={12} /> Video</span>
+                        <span>Content Uploaded</span>
                       </>
                     )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button className="p-2 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"><Edit2 size={18} /></button>
-                  <button onClick={() => handleDeleteLesson(lesson._id)} className="p-2 text-gray-400 hover:text-red-600 transition-colors"><Trash2 size={18} /></button>
+                  <button className="p-2.5 bg-white text-slate-400 hover:text-indigo-600 hover:border-indigo-200 border border-slate-200 rounded-xl transition-all shadow-sm" title="Edit Content"><Edit2 size={16} /></button>
+                  <button onClick={() => handleDeleteLesson(lesson._id, lesson.title)} className="p-2.5 bg-white text-slate-400 hover:text-white hover:bg-red-500 border border-slate-200 hover:border-red-500 rounded-xl transition-all shadow-sm" title="Delete Lesson"><Trash2 size={16} /></button>
                 </div>
               </div>
             ))
@@ -217,36 +235,47 @@ const CourseManager = () => {
         </div>
       </div>
 
-      {/* --- COMMENTS MODAL --- */}
+      {/* 4. SLIDE-OVER COMMENTS PANEL */}
       {isCommentsOpen && (
         <div className="fixed inset-0 z-50 flex justify-end">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsCommentsOpen(false)}></div>
-          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-            <div className="p-6 border-b border-gray-200 dark:border-slate-800 flex justify-between items-center bg-gray-50 dark:bg-slate-950">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Student Comments</h2>
-              <button onClick={() => setIsCommentsOpen(false)}><X size={20} className="text-gray-500" /></button>
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onClick={() => setIsCommentsOpen(false)}></div>
+          <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300 border-l border-slate-200">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
+              <div>
+                 <h2 className="text-lg font-black text-slate-900 tracking-tight">Q&A Forum</h2>
+                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">First Module Chat</p>
+              </div>
+              <button onClick={() => setIsCommentsOpen(false)} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"><X size={20} /></button>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {loadingComments ? <div className="text-center py-10"><Loader2 className="animate-spin inline text-indigo-500"/></div> : 
-               comments.length === 0 ? <div className="text-center py-10 text-gray-500">No comments found.</div> :
-               comments.map(c => (
-                 <div key={c._id} className="bg-gray-50 dark:bg-slate-800/50 p-4 rounded-xl border border-gray-100 dark:border-slate-800">
-                   <div className="flex items-center gap-2 mb-2">
-                     <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-indigo-700 dark:text-slate-300">{c.user?.name?.charAt(0)}</div>
-                     <span className="text-xs font-bold text-gray-900 dark:text-white">{c.user?.name}</span>
-                     <span className="text-[10px] text-gray-400 ml-auto">{new Date(c.createdAt).toLocaleDateString()}</span>
-                   </div>
-                   <p className="text-sm text-gray-600 dark:text-slate-300">{c.text}</p>
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar bg-slate-50/50">
+              {loadingComments ? (
+                 <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2">
+                    <Loader2 className="animate-spin text-indigo-500" size={24}/>
+                    <span className="text-xs font-bold uppercase tracking-widest">Loading threads...</span>
                  </div>
-               ))
-              }
+              ) : comments.length === 0 ? (
+                 <div className="text-center py-20 text-slate-400 font-bold text-sm bg-white rounded-2xl border border-slate-200 border-dashed">No questions asked yet.</div>
+              ) : (
+                comments.map(c => (
+                  <div key={c._id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                         <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-xs font-black text-indigo-600 border border-indigo-100">{c.user?.name?.charAt(0)}</div>
+                         <span className="text-sm font-bold text-slate-900">{c.user?.name}</span>
+                      </div>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date(c.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <p className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">{c.text}</p>
+                  </div>
+                ))
+              )}
             </div>
 
-            <div className="p-4 border-t border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-950">
-               <div className="relative">
-                 <input type="text" placeholder="Type a reply..." className="w-full pl-4 pr-12 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none dark:text-white" />
-                 <button className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"><Send size={16} /></button>
+            <div className="p-6 border-t border-slate-100 bg-white">
+               <div className="relative flex items-center shadow-sm">
+                 <input type="text" placeholder="Type a reply..." className="w-full pl-5 pr-14 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" />
+                 <button className="absolute right-2 p-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors shadow-md shadow-indigo-600/20"><Send size={16} /></button>
                </div>
             </div>
           </div>
@@ -257,23 +286,23 @@ const CourseManager = () => {
   );
 };
 
-// Reusable Stat Card (Same as before)
-const StatCard = ({ icon, label, value, color }) => {
-    const colors = {
-        green: "bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400",
-        blue: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
-        purple: "bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400",
-        yellow: "bg-yellow-50 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400",
-    };
-    return (
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm transition-colors">
-            <div className="flex items-center gap-3 mb-2">
-                <div className={`p-2 rounded-lg ${colors[color]}`}>{icon}</div>
-                <span className="text-[10px] font-black text-gray-400 dark:text-slate-400 uppercase tracking-widest">{label}</span>
-            </div>
-            <p className="text-2xl font-black text-gray-900 dark:text-white">{value}</p>
+// Reusable Stat Widget
+const StatWidget = ({ icon, label, value, color }) => {
+  const colors = {
+    green: "bg-emerald-50 text-emerald-600 ring-emerald-100",
+    blue: "bg-blue-50 text-blue-600 ring-blue-100",
+    purple: "bg-purple-50 text-purple-600 ring-purple-100",
+    orange: "bg-orange-50 text-orange-600 ring-orange-100",
+  };
+  return (
+    <div className="bg-white p-5 rounded-3xl border border-slate-200/60 shadow-sm flex items-center gap-4 group hover:shadow-md transition-all">
+        <div className={`p-3.5 rounded-2xl ring-1 transition-transform group-hover:scale-110 ${colors[color]}`}>{icon}</div>
+        <div>
+           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{label}</span>
+           <p className="text-2xl font-black text-slate-900 tracking-tight leading-none mt-1">{value}</p>
         </div>
-    );
+    </div>
+  );
 };
 
 export default CourseManager;

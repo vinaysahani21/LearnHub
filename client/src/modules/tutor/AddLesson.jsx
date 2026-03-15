@@ -1,21 +1,18 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Video, Loader2, ArrowLeft, Plus, CheckCircle, ListChecks } from 'lucide-react';
+import { Video, Loader2, ArrowLeft, Plus, CheckCircle, ListChecks, Upload } from 'lucide-react';
 import QuizCreator from './QuizCreator.jsx';
 
 const AddLesson = () => {
-  const { id } = useParams(); // Course ID
+  const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   
-  // New State: Toggle between Video and Quiz
-  const [lessonType, setLessonType] = useState('video'); // 'video' | 'quiz'
-
-  // Form Data
+  const [lessonType, setLessonType] = useState('video');
   const [title, setTitle] = useState('');
-  const [videoFile, setVideoFile] = useState(null); // For Video
-  const [quizData, setQuizData] = useState([]);     // For Quiz
+  const [videoFile, setVideoFile] = useState(null);
+  const [quizData, setQuizData] = useState([]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,7 +22,6 @@ const AddLesson = () => {
       const token = localStorage.getItem('token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       
-      // BRANCH 1: VIDEO LESSON (Multipart Form)
       if (lessonType === 'video') {
         const formData = new FormData();
         formData.append('title', title);
@@ -35,21 +31,12 @@ const AddLesson = () => {
         await axios.post(`http://localhost:5000/api/courses/${id}/lessons`, formData, {
            headers: { ...config.headers, 'Content-Type': 'multipart/form-data' }
         });
-      } 
-      // BRANCH 2: QUIZ LESSON (JSON)
-      else {
-        const payload = {
-          title,
-          type: 'quiz',
-          questions: quizData
-        };
-        // Standard JSON request
+      } else {
+        const payload = { title, type: 'quiz', questions: quizData };
         await axios.post(`http://localhost:5000/api/courses/${id}/lessons`, payload, config);
       }
 
-      alert(`${lessonType === 'video' ? 'Video' : 'Quiz'} Lesson Added Successfully!`);
       navigate(-1); 
-      
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.message || 'Upload failed');
@@ -59,116 +46,119 @@ const AddLesson = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <button onClick={() => navigate(-1)} className="flex items-center text-gray-500 mb-6 hover:text-gray-900">
-        <ArrowLeft size={20} className="mr-2" /> Back to Course
+    <div className="max-w-3xl mx-auto py-8 animate-in slide-in-from-bottom-4 duration-500">
+      
+      <button onClick={() => navigate(-1)} className="inline-flex items-center text-xs font-black text-slate-400 hover:text-indigo-600 uppercase tracking-widest mb-6 transition-colors group">
+        <ArrowLeft size={14} className="mr-2 group-hover:-translate-x-1 transition-transform" /> Return to Studio
       </button>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Add New Content</h1>
-
-        {/* TYPE TOGGLE SWITCH */}
-        <div className="flex gap-4 mb-8">
-          <button
-            type="button"
-            onClick={() => setLessonType('video')}
-            className={`flex-1 py-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${
-              lessonType === 'video' 
-                ? 'border-indigo-600 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600' 
-                : 'border-gray-200 hover:border-gray-300 text-gray-600'
-            }`}
-          >
-            <Video size={24} />
-            <span className="font-bold">Video Lesson</span>
-          </button>
-          
-          <button
-            type="button"
-            onClick={() => setLessonType('quiz')}
-            className={`flex-1 py-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${
-              lessonType === 'quiz' 
-                ? 'border-indigo-600 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600' 
-                : 'border-gray-200 hover:border-gray-300 text-gray-600'
-            }`}
-          >
-            <ListChecks size={24} />
-            <span className="font-bold">Quiz Assessment</span>
-          </button>
+      <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/20 border border-slate-200/60 overflow-hidden">
+        
+        {/* HEADER */}
+        <div className="bg-[#0a0f1c] p-8 text-white relative overflow-hidden">
+           <div className="absolute -right-10 -top-10 opacity-5 rotate-12"><Video size={200} /></div>
+           <h1 className="text-2xl font-black tracking-tight relative z-10">Module Injector</h1>
+           <p className="text-slate-400 text-sm mt-1 relative z-10">Add structured content or assessments to your curriculum.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          
-          {/* Title Input (Common) */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {lessonType === 'video' ? 'Lesson Title' : 'Quiz Title'}
-            </label>
-            <input 
-              type="text" 
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={lessonType === 'video' ? "e.g. Introduction to React" : "e.g. Module 1 Assessment"}
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-
-          {/* DYNAMIC CONTENT AREA */}
-          {lessonType === 'video' ? (
-            // === VIDEO UPLOAD SECTION ===
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Video File</label>
-              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:bg-gray-50 transition-colors bg-gray-50">
-                <div className="space-y-1 text-center">
-                  <Video className="mx-auto h-12 w-12 text-indigo-400" />
-                  <div className="flex text-sm text-gray-600 justify-center">
-                    <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none px-2">
-                      <span>Select Video File</span>
-                      <input 
-                        id="file-upload" 
-                        name="file-upload" 
-                        type="file" 
-                        className="sr-only" 
-                        accept="video/*" 
-                        onChange={(e) => setVideoFile(e.target.files[0])} 
-                        required 
-                      />
-                    </label>
-                  </div>
-                  <p className="text-xs text-gray-500">MP4, MKV supported</p>
-                  {videoFile && (
-                    <div className="mt-4 flex items-center justify-center gap-2 text-sm text-green-600 font-medium bg-green-50 py-1 px-3 rounded-full">
-                      <CheckCircle size={14} />
-                      {videoFile.name}
-                    </div>
-                  )}
-                </div>
-              </div>
+        <div className="p-8">
+            {/* TYPE TOGGLE SWITCH (Premium Segmented Control) */}
+            <div className="flex bg-slate-100 p-1.5 rounded-2xl mb-8 relative">
+              <button
+                type="button"
+                onClick={() => setLessonType('video')}
+                className={`flex-1 py-3.5 rounded-xl flex items-center justify-center gap-2 text-sm font-black transition-all z-10 ${
+                  lessonType === 'video' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <Video size={18} /> Video Lesson
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setLessonType('quiz')}
+                className={`flex-1 py-3.5 rounded-xl flex items-center justify-center gap-2 text-sm font-black transition-all z-10 ${
+                  lessonType === 'quiz' ? 'bg-white text-orange-600 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <ListChecks size={18} /> Interactive Quiz
+              </button>
             </div>
-          ) : (
-            // === QUIZ CREATOR SECTION ===
-            <QuizCreator onQuizChange={setQuizData} />
-          )}
 
-          {/* Submit Button */}
-          <button 
-            type="submit" 
-            disabled={loading}
-            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-all flex justify-center items-center"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="animate-spin mr-2" /> 
-                {lessonType === 'video' ? 'Uploading Video...' : 'Saving Quiz...'}
-              </>
-            ) : (
-              <>
-                <Plus className="mr-2" /> 
-                {lessonType === 'video' ? 'Upload Lesson' : 'Publish Quiz'}
-              </>
-            )}
-          </button>
-        </form>
+            <form onSubmit={handleSubmit} className="space-y-8">
+              
+              {/* Common Title Input */}
+              <div>
+                <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">
+                  {lessonType === 'video' ? 'Video Module Title' : 'Assessment Title'}
+                </label>
+                <input 
+                  type="text" 
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder={lessonType === 'video' ? "e.g. Setting up the environment" : "e.g. Module 1 Knowledge Check"}
+                  required
+                  className={`w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-lg font-bold text-slate-900 focus:bg-white focus:ring-4 outline-none transition-all placeholder:font-medium placeholder:text-slate-300 ${lessonType === 'video' ? 'focus:ring-indigo-500/10 focus:border-indigo-500' : 'focus:ring-orange-500/10 focus:border-orange-500'}`}
+                />
+              </div>
+
+              {/* DYNAMIC CONTENT AREA */}
+              {lessonType === 'video' ? (
+                <div className="animate-in fade-in zoom-in-95 duration-300">
+                  <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Video Source File</label>
+                  <div className="relative group mt-1 flex justify-center px-6 pt-10 pb-10 border-2 border-slate-200 border-dashed rounded-3xl hover:bg-indigo-50 hover:border-indigo-300 transition-all cursor-pointer bg-slate-50/50">
+                    
+                    {videoFile ? (
+                      <div className="space-y-3 text-center z-10">
+                        <div className="mx-auto w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center border-4 border-white shadow-sm">
+                          <CheckCircle className="h-8 w-8 text-emerald-600" />
+                        </div>
+                        <p className="text-sm text-emerald-700 font-black">Video Ready for Injection</p>
+                        <p className="text-xs font-bold text-slate-500 truncate max-w-xs px-4 py-1.5 bg-white rounded-lg border border-slate-200 inline-block shadow-sm">
+                          {videoFile.name}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3 text-center z-10">
+                        <div className="mx-auto w-16 h-16 bg-white rounded-full flex items-center justify-center border border-slate-100 shadow-sm group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all text-slate-300">
+                          <Upload className="h-6 w-6" />
+                        </div>
+                        <div className="flex text-sm text-slate-600 justify-center">
+                          <span className="font-bold text-indigo-600 group-hover:text-indigo-700">Browse files</span>
+                          <span className="ml-1 font-medium">to upload video payload</span>
+                        </div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">MP4, MKV format supported</p>
+                      </div>
+                    )}
+                    
+                    <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" accept="video/*" onChange={(e) => setVideoFile(e.target.files[0])} required />
+                  </div>
+                </div>
+              ) : (
+                <div className="animate-in fade-in zoom-in-95 duration-300 bg-orange-50/30 p-1 rounded-3xl border border-orange-100/50">
+                   <QuizCreator onQuizChange={setQuizData} />
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <button 
+                type="submit" 
+                disabled={loading}
+                className={`w-full py-4 text-white font-black text-sm uppercase tracking-widest rounded-2xl shadow-lg transition-all flex justify-center items-center gap-3 disabled:opacity-70 active:scale-[0.98] ${
+                  lessonType === 'video' ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/20' : 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/20'
+                }`}
+              >
+                {loading ? (
+                  <><Loader2 className="animate-spin w-5 h-5" /> Processing Payload...</>
+                ) : (
+                  <>
+                    {lessonType === 'video' ? <><Plus size={18} /> Inject Video Module</> : <><ListChecks size={18} /> Deploy Assessment</>}
+                  </>
+                )}
+              </button>
+
+            </form>
+        </div>
       </div>
     </div>
   );

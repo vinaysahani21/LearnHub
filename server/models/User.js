@@ -14,6 +14,10 @@ const userSchema = new mongoose.Schema({
   headline: { type: String }, // e.g. "Senior React Developer"
   bio: { type: String },
   skills: [{ type: String }], // e.g. ["Python", "Data Science"]
+  isActive: {
+  type: Boolean,
+  default: true
+},
 
   enrolledCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
 }, { timestamps: true });

@@ -12,6 +12,8 @@ const courseRoutes = require('./routes/courseRoutes');
 const authRoutes = require('./routes/authRoutes'); 
 const paymentRoutes = require('./routes/paymentRoutes'); 
 const adminRoutes = require('./routes/adminRoutes'); 
+const tutorRoutes = require('./routes/tutorRoutes');
+const studentRoutes = require('./routes/studentRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -30,6 +32,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/progress', progressRoutes); 
 app.use('/api/payment', paymentRoutes);
 app.use('/api/admin', adminRoutes); 
+app.use('/api/tutor', tutorRoutes);
+app.use('/api/student', studentRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
