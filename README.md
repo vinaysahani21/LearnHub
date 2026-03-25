@@ -2,7 +2,7 @@
 LearnHub is an enterprise-grade Learning Management System (LMS) built with the MERN stack. It features a triple-panel architecture designed for high-performance content delivery, administrative control, and creator empowerment.
 
 
-# 🛠 Tech Stack
+### 🛠 Tech Stack
 
 Frontend: React.js, Tailwind CSS (Custom "Linear" Aesthetic)
 Icons: Lucide-React
@@ -12,7 +12,7 @@ Database: MongoDB (Mongoose)
 Certificates: html2canvas, jsPDF
 File Handling: Multer (Local Storage / Cloudinary ready)
 
-# 💎 Key Features
+### 💎 Key Features
 
 🏢 1. Admin OS (Red Theme)
 
@@ -37,30 +37,35 @@ Verified Certificates: Dynamic, high-fidelity PDF certificates with unique verif
 Class Forum: Lesson-specific discussion threads.
 Local Notebook: Auto-saving module-specific notes using LocalStorage.
 
-# ⚙️ Installation & 
+### ⚙️ Installation & 
 
 1. Clone the repository
 
+```bash
 git clone https://github.com/your-username/learnhub.git
 cd learnhub
+```
 
 2. Backend Setup
-
+```bash
 cd server
 npm install
 Create a .env file (see keys below)
 npm start
+```
 
 3. Frontend Setup
 
+```bash
 cd client
 npm install
 npm run dev
+```
 
-# 🔐 Environment Variables (.env)
+### 🔐 Environment Variables (.env)
 
 You will need a .env file in the server directory with the following keys:
-
+```bash
 Code snippet
 #SERVER CONFIG
 PORT=5000
@@ -78,8 +83,10 @@ CLIENT_URL=http://localhost:5173
 
 # FILE UPLOADS (If using local uploads)
 UPLOAD_PATH=uploads
+```
 
-🚀 Usage Details
+#### 🚀 Usage Details
+
 How to use the panels:
 Student: Register an account, explore the catalog, enroll in a course (even free ones), and complete modules to unlock your gold-sealed certificate.
 
@@ -90,4 +97,4 @@ Admin: Use the Admin login to oversee the entire operation. Approve new courses 
 📜 License
 Distributed under the MIT License. See LICENSE for more information.
 
-# Developed by Vinay Sahani.
+## Developed by Vinay Sahani.
