@@ -1,5 +1,4 @@
 <div align="center">
-  <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1471&q=80" alt="LearnHub Hero" width="100%" style="border-radius: 12px; margin-bottom: 20px;" />
 
   <h1>🚀 LearnHub: Premium E-Learning Platform</h1>
   <p><strong>An enterprise-grade Learning Management System built with the MERN stack.</strong></p>
