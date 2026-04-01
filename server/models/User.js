@@ -9,17 +9,23 @@ const userSchema = new mongoose.Schema({
     enum: ['student', 'tutor', 'admin'],
     default: 'student'
   },
+  profilePicture: { type: String }, 
 
   // --- NEW FIELDS FOR TUTORS ONLY ---
-  headline: { type: String }, // e.g. "Senior React Developer"
+  headline: { type: String }, 
   bio: { type: String },
-  skills: [{ type: String }], // e.g. ["Python", "Data Science"]
+  skills: [{ type: String }], 
   isActive: {
-  type: Boolean,
-  default: true
-},
+    type: Boolean,
+    default: true
+  },
 
   enrolledCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
+    completedCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
+  
+  completedLessons: [{ 
+    type: mongoose.Schema.Types.ObjectId, 
+  }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

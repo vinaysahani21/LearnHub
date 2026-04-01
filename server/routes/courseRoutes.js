@@ -1,9 +1,11 @@
+// server/routes/courseRoutes.js
 const express = require('express');
 const router = express.Router();
 const Course = require('../models/Course');
 const { protect, tutorOnly } = require('../middleware/authMiddleware'); 
 const upload = require('../utils/localUpload'); 
 const Comment = require('../models/Comment'); 
+const Notification = require('../models/Notification');
 
 // 1. GET ALL PUBLIC COURSES
 router.get('/', async (req, res) => {
@@ -41,7 +43,7 @@ router.post('/', protect, tutorOnly, upload.single('thumbnail'), async (req, res
       thumbnail: thumbnailUrl, 
       tutor: req.user.id
     });
-
+ 
     const savedCourse = await newCourse.save();
     res.status(201).json(savedCourse);
   } catch (err) {
@@ -68,7 +70,7 @@ router.post('/:id/enroll', protect, async (req, res) => {
 
     // 1. Get User AND Course
     const user = await require('../models/User').findById(userId);
-    const course = await Course.findById(courseId); // <--- Added this
+    const course = await Course.findById(courseId); 
 
     if (!course) return res.status(404).json({ message: "Course not found" });
 
@@ -79,10 +81,18 @@ router.post('/:id/enroll', protect, async (req, res) => {
 
     // 3. Update BOTH User and Course
     user.enrolledCourses.push(courseId);
-    course.enrolledStudents.push(userId); // <--- CRITICAL FIX: Add student to course
+    course.enrolledStudents.push(userId); 
 
     // 4. Save both (Parallel save is faster)
     await Promise.all([user.save(), course.save()]);
+
+    // 🔥 INJECTED: ENROLLMENT NOTIFICATION 🔥
+    Notification.create({
+      user: userId,
+      title: "Enrollment Successful! 🎉",
+      message: `Welcome to "${course.title}". Your learning journey starts now.`,
+      type: "payment"
+    }).catch(err => console.error("Notification Error:", err));
 
     res.status(200).json({ message: "Enrollment successful" });
   } catch (err) {
@@ -106,9 +116,7 @@ router.post('/:id/lessons', protect, tutorOnly, upload.single('video'), async (r
 
     const { title, type, questions } = req.body;
 
-    // --- NEW LOGIC START ---
-
-    // BRANCH A: QUIZ (No file check needed)
+    // BRANCH A: QUIZ
     if (type === 'quiz') {
       if (!questions || questions.length === 0) {
         return res.status(400).json({ message: "Quiz must have at least one question" });
@@ -117,12 +125,11 @@ router.post('/:id/lessons', protect, tutorOnly, upload.single('video'), async (r
       course.lessons.push({
         title,
         type: 'quiz',
-        questions: questions, // Frontend sends JSON questions
+        questions: questions,
         videoUrl: null
       });
     }
-    
-    // BRANCH B: VIDEO (File check IS needed)
+    // BRANCH B: VIDEO
     else {
       if (!req.file) {
         return res.status(400).json({ message: "No video file uploaded" });
@@ -132,19 +139,80 @@ router.post('/:id/lessons', protect, tutorOnly, upload.single('video'), async (r
 
       course.lessons.push({
         title,
-        type: 'video', // Default type
+        type: 'video', 
         videoUrl: fullUrl,
         publicId: req.file.filename,
         questions: []
       });
     }
-    
 
     await course.save();
+
+    // 🔥 INJECTED: BULK NOTIFICATION TO ALL ENROLLED STUDENTS 🔥
+    if (course.enrolledStudents && course.enrolledStudents.length > 0) {
+      const notificationsToPush = course.enrolledStudents.map(studentId => ({
+        user: studentId,
+        title: "New Lesson Added! 📚",
+        message: `A new module "${title}" was just added to "${course.title}". Continue your learning!`,
+        type: "course"
+      }));
+      Notification.insertMany(notificationsToPush).catch(e => console.error("Notification Error:", e));
+    }
+
     res.status(201).json(course);
 
   } catch (err) {
     console.error("Add Lesson Error:", err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ==========================================
+// 6.5 EDIT/UPDATE LESSON 
+// ==========================================
+router.put('/:id/lessons/:lessonId', protect, tutorOnly, upload.single('video'), async (req, res) => {
+  try {
+    // 1. Find the course
+    const course = await Course.findById(req.params.id);
+    if (!course) return res.status(404).json({ message: "Course not found" });
+
+    // 2. Security Check: Only the owner can edit
+    if (course.tutor.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Not authorized to modify this course" });
+    }
+
+    // 3. Find the specific lesson inside the course's lessons array
+    const lesson = course.lessons.id(req.params.lessonId);
+    if (!lesson) return res.status(404).json({ message: "Lesson not found" });
+
+    const { title, type, questions } = req.body;
+
+    // 4. Update the Title
+    if (title) lesson.title = title;
+
+    // 5. Update based on type
+    if (type === 'quiz') {
+      // If it's a quiz, update the questions array
+      if (questions) {
+        lesson.questions = questions;
+      }
+    } else {
+      // If it's a video, check if a NEW file was uploaded
+      if (req.file) {
+        const fullUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+        lesson.videoUrl = fullUrl;
+        lesson.publicId = req.file.filename;
+      }
+      // Note: If no new file is uploaded, it simply keeps the old videoUrl!
+    }
+
+    // 6. Save the course document with the updated sub-document
+    await course.save();
+
+    res.status(200).json({ message: "Lesson updated successfully", lesson });
+
+  } catch (err) {
+    console.error("Edit Lesson Error:", err);
     res.status(500).json({ message: err.message });
   }
 });
@@ -154,11 +222,37 @@ router.patch('/:id/status', protect, tutorOnly, async (req, res) => {
   try {
     const course = await Course.findById(req.params.id);
     if (!course) return res.status(404).json({ message: "Course not found" });
+    
     if (course.tutor.toString() !== req.user.id) {
       return res.status(403).json({ message: "Not authorized" });
     }
+    
     course.isActive = !course.isActive;
     await course.save();
+
+    // 🔥 INJECTED: MARKETING BLAST TO PAST STUDENTS WHEN PUBLISHED 🔥
+    if (course.isActive) {
+      // Find all courses this tutor owns (excluding this newly published one)
+      const allTutorCourses = await Course.find({ tutor: req.user.id, _id: { $ne: course._id } });
+      
+      // Extract all student IDs and remove duplicates
+      let pastStudentIds = [];
+      allTutorCourses.forEach(c => {
+        if (c.enrolledStudents) pastStudentIds.push(...c.enrolledStudents.map(id => id.toString()));
+      });
+      pastStudentIds = [...new Set(pastStudentIds)];
+
+      if (pastStudentIds.length > 0) {
+        const notifications = pastStudentIds.map(studentId => ({
+          user: studentId,
+          title: "New Course from your Instructor! 🚀",
+          message: `Your instructor just published "${course.title}". Check it out in the catalog!`,
+          type: "course"
+        }));
+        Notification.insertMany(notifications).catch(e => console.error("Notification Error:", e));
+      }
+    }
+
     res.json({ message: `Course is now ${course.isActive ? 'Active' : 'Inactive'}`, isActive: course.isActive });
   } catch (err) {
     res.status(500).json({ message: err.message });

@@ -22,6 +22,7 @@ const StudentDashboard = () => {
         
         const res = await axios.get('http://localhost:5000/api/student/dashboard-data', config);
         setDashboardData(res.data);
+        // console.log("Dashboard Data:", res.data);
       } catch (err) {
         console.error("Failed to load dashboard data", err);
       } finally {

@@ -9,7 +9,10 @@ import {
   BookOpen,
   ArrowRight,
   Zap,
-  GraduationCap
+  GraduationCap,
+  Maximize,
+  Download,
+  X
 } from "lucide-react";
 
 const MyLearning = () => {
@@ -20,6 +23,9 @@ const MyLearning = () => {
   // UI States
   const [activeTab, setActiveTab] = useState("active");
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // NEW: Fullscreen Certificate State
+  const [fullscreenCert, setFullscreenCert] = useState({ show: false, courseId: null, date: null });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -36,7 +42,11 @@ const MyLearning = () => {
 
         const map = {};
         progressRes.data.forEach((p) => {
-          map[p.courseId] = p.completedLessons;
+          // 🔥 UPGRADE: We now store the exact completion date (updatedAt) along with the lessons
+          map[p.courseId] = {
+            lessons: p.completedLessons,
+            completedAt: p.updatedAt 
+          };
         });
         setProgressMap(map);
       } catch (err) {
@@ -51,15 +61,19 @@ const MyLearning = () => {
   const getProgressStats = (course) => {
     const totalLessons = course.lessons?.length || 0;
     if (totalLessons === 0)
-      return { percent: 0, completedCount: 0, isCompleted: false };
+      return { percent: 0, completedCount: 0, isCompleted: false, completedAt: null };
 
-    const completedLessons = progressMap[course._id] || [];
+    // Safely extract from our new map structure
+    const progressData = progressMap[course._id] || { lessons: [], completedAt: null };
+    const completedLessons = progressData.lessons;
+    
     const percent = Math.round((completedLessons.length / totalLessons) * 100);
 
     return {
       percent,
       completedCount: completedLessons.length,
       isCompleted: percent === 100,
+      completedAt: progressData.completedAt // Passing the exact completion date!
     };
   };
 
@@ -75,7 +89,6 @@ const MyLearning = () => {
     return matchesSearch;
   });
 
-  // Signature Sky Blue Loader
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] gap-4 bg-white dark:bg-[#020617] transition-colors">
@@ -89,7 +102,7 @@ const MyLearning = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto min-h-[80vh] transition-colors duration-300 animate-in fade-in">
+    <div className="max-w-7xl mx-auto min-h-[80vh] transition-colors duration-300 animate-in fade-in relative">
       
       {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-slate-200 dark:border-slate-800/50 pb-8 mb-8">
@@ -98,15 +111,13 @@ const MyLearning = () => {
             My Learning <GraduationCap className="text-sky-500" size={32} />
           </h1>
           <p className="text-slate-500 font-medium mt-2">
-            Track your progress, resume modules, and download your certificates.
+            Track your progress, resume modules, and view your certificates.
           </p>
         </div>
       </div>
 
       {/* CONTROLS BAR */}
       <div className="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm flex flex-col lg:flex-row justify-between items-center gap-6 mb-10 transition-colors">
-        
-        {/* Premium Segmented Tabs */}
         <div className="flex bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700 w-full lg:w-auto">
           <button
             onClick={() => setActiveTab("active")}
@@ -130,7 +141,6 @@ const MyLearning = () => {
           </button>
         </div>
 
-        {/* Cinematic Search */}
         <div className="relative w-full lg:w-[350px] group">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-sky-500 transition-colors w-5 h-5" />
           <input
@@ -154,7 +164,6 @@ const MyLearning = () => {
                 key={course._id}
                 className="group bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl overflow-hidden hover:shadow-2xl hover:shadow-sky-900/10 hover:border-sky-200 dark:hover:border-sky-500/30 transition-all duration-300 flex flex-col"
               >
-                {/* Thumbnail Area */}
                 <div className="h-48 bg-slate-100 dark:bg-slate-800 relative overflow-hidden">
                   <img
                     src={course.thumbnail}
@@ -163,7 +172,6 @@ const MyLearning = () => {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1c]/90 via-[#0a0f1c]/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity"></div>
                   
-                  {/* Floating Action Button */}
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
                     <Link
                       to={`/student/course/${course._id}/watch`}
@@ -174,7 +182,6 @@ const MyLearning = () => {
                   </div>
                 </div>
 
-                {/* Card Body */}
                 <div className="p-6 flex-1 flex flex-col relative">
                   <div className="absolute -top-5 right-6">
                     <span className="text-[9px] font-black uppercase tracking-widest text-white bg-[#0a0f1c]/80 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-lg shadow-xl">
@@ -192,19 +199,31 @@ const MyLearning = () => {
                     {course.tutor?.name || "Expert Instructor"}
                   </p>
 
-                  {/* Progress Section */}
                   <div className="mt-auto pt-5 border-t border-slate-100 dark:border-slate-800/50">
                     {stats.isCompleted ? (
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-100 dark:border-emerald-500/20">
+                        <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-1.5 rounded-lg border border-emerald-100 dark:border-emerald-500/20">
                           <CheckCircle size={14} className="fill-emerald-400/20" /> Mastered
                         </span>
-                        <Link
-                          to={`/student/course/${course._id}/certificate`}
-                          className="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-white hover:text-sky-600 dark:hover:text-sky-400 flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-sky-500/20 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-lg transition-all"
-                        >
-                          <Award size={14} /> Certificate
-                        </Link>
+                        
+                        {/* UPGRADED CERTIFICATE ACTIONS */}
+                        <div className="flex items-center gap-2">
+                           {/* 1. Fullscreen View Button */}
+                           <button 
+                             onClick={() => setFullscreenCert({ show: true, courseId: course._id, date: stats.completedAt })}
+                             className="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-white hover:text-sky-600 dark:hover:text-sky-400 flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-sky-500/20 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-lg transition-all"
+                           >
+                             <Maximize size={14} /> View
+                           </button>
+
+                           {/* 2. Download/Navigate Button (Passing Date as Query Param) */}
+                           <Link
+                             to={`/student/course/${course._id}/certificate?date=${stats.completedAt}`}
+                             className="text-[10px] font-black uppercase tracking-widest text-white hover:text-white flex items-center gap-1.5 bg-sky-600 hover:bg-sky-500 border border-sky-600 px-3 py-2 rounded-lg transition-all shadow-md shadow-sky-500/20"
+                           >
+                             <Download size={14} /> Get
+                           </Link>
+                        </div>
                       </div>
                     ) : (
                       <>
@@ -231,7 +250,6 @@ const MyLearning = () => {
           })}
         </div>
       ) : (
-        /* PREMIUM EMPTY STATE */
         <div className="text-center py-24 bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 transition-colors shadow-sm">
           <div className="bg-sky-50 dark:bg-sky-500/10 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 border border-sky-100 dark:border-sky-500/20">
             {activeTab === "completed" ? (
@@ -262,6 +280,37 @@ const MyLearning = () => {
           )}
         </div>
       )}
+
+      {/* FULLSCREEN CERTIFICATE MODAL */}
+      {fullscreenCert.show && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/95 backdrop-blur-md flex flex-col items-center justify-center p-4 sm:p-8 animate-in fade-in duration-300">
+          
+          <div className="w-full max-w-5xl flex justify-between items-center mb-4">
+            <h3 className="text-white font-black tracking-widest uppercase text-xs flex items-center gap-2">
+              <Award className="text-sky-400" size={16}/> Official Certificate
+            </h3>
+            <button 
+              onClick={() => setFullscreenCert({ show: false, courseId: null, date: null })}
+              className="bg-white/10 hover:bg-red-500 text-white p-2 rounded-full transition-colors shadow-lg"
+            >
+              <X size={20} />
+            </button>
+          </div>
+          
+          <div className="w-full h-[75vh] max-w-5xl bg-white dark:bg-slate-900 rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] border border-white/10 relative">
+            {/* This simply loads your existing certificate page inside an iframe, 
+              but adds the exact completion date to the URL! 
+            */}
+            <iframe 
+              src={`/student/course/${fullscreenCert.courseId}/certificate?date=${fullscreenCert.date}&fullscreen=true`}
+              className="w-full h-full border-0"
+              title="Certificate Viewer"
+            />
+          </div>
+
+        </div>
+      )}
+
     </div>
   );
 };

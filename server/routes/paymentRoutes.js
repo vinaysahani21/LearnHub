@@ -4,6 +4,11 @@ const Razorpay = require('razorpay');
 const crypto = require('crypto');
 const Order = require('../models/Order');
 const User = require('../models/User'); 
+
+// 🔥 IMPORT COURSE AND NOTIFICATION MODELS 🔥
+const Course = require('../models/Course');
+const Notification = require('../models/Notification'); 
+
 const { protect } = require('../middleware/authMiddleware');
 
 // Initialize Razorpay with Environment Variables
@@ -64,7 +69,7 @@ router.post('/verify', protect, async (req, res) => {
       .digest('hex');
 
     if (expectedSignature === razorpay_signature) {
-      // Update Order Status
+      // 1. Update Order Status
       await Order.findOneAndUpdate(
         { razorpayOrderId: razorpay_order_id },
         { 
@@ -74,11 +79,24 @@ router.post('/verify', protect, async (req, res) => {
         }
       );
 
-      // Enroll User
+      // 2. Enroll User & Update Course Stats (Fixed Bug here!)
       const user = await User.findById(req.user.id);
-      if (!user.enrolledCourses.includes(courseId)) {
+      const course = await Course.findById(courseId);
+
+      if (user && course && !user.enrolledCourses.includes(courseId)) {
         user.enrolledCourses.push(courseId);
-        await user.save();
+        course.enrolledStudents.push(req.user.id); // Add student to course roster
+        
+        // Save both in parallel
+        await Promise.all([user.save(), course.save()]);
+
+        //  PAYMENT SUCCESS NOTIFICATION 
+        Notification.create({
+          user: req.user.id,
+          title: "Payment Successful! 🎉",
+          message: `Welcome to "${course.title}". Your learning journey starts now.`,
+          type: "payment"
+        }).catch(err => console.error("Notification Error:", err));
       }
 
       res.json({ message: "Payment successful", success: true });

@@ -6,16 +6,20 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 
+
 const StudentProfile = () => {
   const { user, login } = useAuth(); 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [uploadingPic, setUploadingPic] = useState(false); 
+  const [realStats, setRealStats] = useState({ enrolled: 0, completed: 0, hours: 0 });
 
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     bio: '',
-    skills: '' 
+    skills: '',
+    profilePic: '' // Added profilePic to form data
   });
 
   useEffect(() => {
@@ -24,13 +28,66 @@ const StudentProfile = () => {
         name: user.name || '',
         email: user.email || '',
         bio: user.bio || '',
-        skills: user.skills ? user.skills.join(', ') : '' 
+        skills: user.skills ? user.skills.join(', ') : '',
+        profilePic: user.profilePic || '' 
       });
     }
+
+    const fetchStats = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        const res = await axios.get('http://localhost:5000/api/student/dashboard-data', config);
+        
+        setRealStats({
+          enrolled: res.data.stats.activeCourses + res.data.stats.completedCourses,
+          completed: res.data.stats.completedCourses,
+          hours: res.data.stats.learningHours
+        });
+      } catch (err) {
+        console.error("Failed to fetch stats", err);
+      }
+    };
+    
+    fetchStats();
   }, [user]);
+
+  
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  // Handle Profile Picture Upload
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploadingPic(true);
+    const uploadData = new FormData();
+    uploadData.append('file', file);
+    uploadData.append('folder', 'learnhub_profiles'); // Puts it in a specific Cloudinary/Local folder
+
+    try {
+      const token = localStorage.getItem('token');
+      const config = { 
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        } 
+      };
+      
+      // Hit your upload endpoint
+      const res = await axios.post('http://localhost:5000/api/student/upload', uploadData, config);
+      
+      // Update form data so it previews immediately (User still needs to click Save to persist to DB)
+      setFormData(prev => ({ ...prev, profilePic: res.data.url }));
+    } catch (err) {
+      console.error("Upload error:", err);
+      alert("Failed to upload image. Please try again.");
+    } finally {
+      setUploadingPic(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -55,12 +112,11 @@ const StudentProfile = () => {
     }
   };
 
-  const stats = [
-    { label: 'Enrolled', value: user?.enrolledCourses?.length || 0, icon: BookOpen, color: 'text-sky-500', bg: 'bg-sky-50 dark:bg-sky-500/10' },
-    { label: 'Completed', value: '0', icon: Award, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
-    { label: 'Hours', value: '0', icon: Clock, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-500/10' },
+const stats = [
+    { label: 'Enrolled', value: realStats.enrolled, icon: BookOpen, color: 'text-sky-500', bg: 'bg-sky-50 dark:bg-sky-500/10' },
+    { label: 'Completed', value: realStats.completed, icon: Award, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
+    { label: 'Hours', value: realStats.hours, icon: Clock, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-500/10' },
   ];
-
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
       
@@ -73,12 +129,26 @@ const StudentProfile = () => {
         <div className="px-8 pb-8 flex flex-col md:flex-row items-center md:items-end gap-6 -mt-16 relative z-10 text-center md:text-left">
           
           <div className="relative group">
-            <div className="w-32 h-32 rounded-full border-4 border-white dark:border-slate-900 bg-[#0a0f1c] flex items-center justify-center shadow-2xl text-5xl font-black text-white uppercase ring-4 ring-sky-500/30">
-              {user?.name?.charAt(0) || 'S'}
+            {/* Dynamic Avatar: Shows Image if exists, else falls back to Name Initial */}
+            <div className="w-32 h-32 rounded-full border-4 border-white dark:border-slate-900 bg-[#0a0f1c] flex items-center justify-center shadow-2xl text-5xl font-black text-white uppercase ring-4 ring-sky-500/30 overflow-hidden">
+              {formData.profilePic ? (
+                <img src={formData.profilePic} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                user?.name?.charAt(0) || 'S'
+              )}
             </div>
-            <button className="absolute bottom-2 right-2 bg-sky-500 text-white p-2.5 rounded-full hover:bg-sky-400 transition-transform shadow-lg border-2 border-white dark:border-slate-900 group-hover:scale-110 active:scale-95">
-              <Camera size={16} />
-            </button>
+            
+            {/* Camera Upload Button */}
+            <label className="absolute bottom-2 right-2 bg-sky-500 text-white p-2.5 rounded-full hover:bg-sky-400 transition-transform shadow-lg border-2 border-white dark:border-slate-900 group-hover:scale-110 active:scale-95 cursor-pointer">
+              {uploadingPic ? <Loader2 className="animate-spin w-4 h-4" /> : <Camera size={16} />}
+              <input 
+                type="file" 
+                accept="image/*" 
+                className="hidden" 
+                onChange={handleImageUpload} 
+                disabled={uploadingPic} 
+              />
+            </label>
           </div>
 
           <div className="flex-1 pb-2">
@@ -185,7 +255,7 @@ const StudentProfile = () => {
 
               <div className="flex items-center justify-end pt-4">
                 <button 
-                  type="submit" disabled={loading}
+                  type="submit" disabled={loading || uploadingPic}
                   className="px-10 py-4 bg-[#0a0f1c] dark:bg-sky-600 hover:bg-slate-800 dark:hover:bg-sky-500 text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-xl shadow-slate-900/10 dark:shadow-sky-900/20 transition-all flex items-center gap-2 disabled:opacity-50 active:scale-95"
                 >
                   {loading ? <Loader2 className="animate-spin w-4 h-4" /> : <Save size={16} />}

@@ -6,6 +6,7 @@ const Payout = require('../models/Payout');
 const Order = require('../models/Order');
 const Course = require('../models/Course');
 const Settings = require('../models/Settings');
+const Notification = require('../models/Notification');
 
 // ==========================================
 // 1. GET TUTOR PAYOUTS & WALLET BALANCE
@@ -48,6 +49,31 @@ router.get('/payouts', protect, tutorOnly, async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
+
+  try {
+    const tutorId = req.user._id;
+    const courses = await Course.find({ tutor: tutorId });
+    const courseIds = courses.map(c => c._id);
+    const orders = await Order.find({ course: { $in: courseIds }, status: { $in: ['completed', 'paid'] } });
+    const grossRevenue = orders.reduce((sum, order) => sum + order.amount, 0);
+    const settings = await Settings.findOne({ configId: 'global_config' });
+    const feePercent = settings ? settings.platformFeePercentage : 10;
+    const totalNetEarnings = grossRevenue - (grossRevenue * (feePercent / 100));
+    const payouts = await Payout.find({ tutor: tutorId }).sort({ createdAt: -1 });
+    const withdrawnOrPendingAmount = payouts
+      .filter(p => p.status === 'approved' || p.status === 'pending')
+      .reduce((sum, p) => sum + p.amount, 0);
+    const availableBalance = totalNetEarnings - withdrawnOrPendingAmount;
+
+    res.json({
+      balance: availableBalance > 0 ? availableBalance : 0,
+      totalEarned: totalNetEarnings,
+      totalWithdrawn: payouts.filter(p => p.status === 'approved').reduce((sum, p) => sum + p.amount, 0),
+      history: payouts
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
 // ==========================================
@@ -69,6 +95,13 @@ router.post('/payouts', protect, tutorOnly, async (req, res) => {
       paymentDetails,
       status: 'pending'
     });
+
+    Notification.create({
+      user: req.user._id,
+      title: "Payout Request Received ",
+      message: `Your request to withdraw ₹${amount} via ${paymentMethod} is currently pending approval by the admin team.`,
+      type: "system"
+    }).catch(err => console.error("Notification Error:", err));
 
     res.status(201).json({ message: 'Payout request submitted successfully', payout: newPayout });
   } catch (err) {
@@ -108,7 +141,8 @@ router.get('/dashboard-data', protect, tutorOnly, async (req, res) => {
         netEarnings,
         feePercent
       },
-      recentEnrollments: orders.slice(0, 5) // Last 5 students
+      recentEnrollments: orders.slice(0, 5),
+      allOrders: orders
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -172,6 +206,53 @@ router.get('/students', protect, tutorOnly, async (req, res) => {
     res.json(students);
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+});
+
+// ==========================================
+// 4. GET SPECIFIC COURSE STATS
+// ==========================================
+router.get('/course/:id/stats', protect, tutorOnly, async (req, res) => {
+  try {
+    const courseId = req.params.id;
+    const tutorId = req.user._id;
+
+    // 1. Verify ownership
+    const course = await Course.findOne({ _id: courseId, tutor: tutorId });
+    if (!course) return res.status(404).json({ message: 'Course not found or unauthorized' });
+
+    // 2. Fetch successful orders strictly for this course
+    const orders = await Order.find({ 
+      course: courseId,
+      status: { $in: ['completed', 'paid'] } 
+    });
+
+    // 3. Calculate exact stats
+    const enrollments = orders.length;
+    const grossRevenue = orders.reduce((sum, order) => sum + (order.amount || 0), 0);
+
+    res.json({ enrollments, grossRevenue });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Add to the bottom of server/routes/tutorRoutes.js
+router.get('/notifications', protect, tutorOnly, async (req, res) => {
+  try {
+    const notifications = await Notification.find({ user: req.user._id }).sort({ createdAt: -1 }).limit(20);
+    res.json(notifications);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching notifications', error: err.message });
+  }
+});
+
+router.patch('/notifications/read-all', protect, tutorOnly, async (req, res) => {
+  try {
+    await Notification.updateMany({ user: req.user._id, isRead: false }, { $set: { isRead: true } });
+    res.json({ message: 'All notifications marked as read' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error updating notifications', error: err.message });
   }
 });
 

@@ -5,27 +5,26 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { protect } = require('../middleware/authMiddleware');
 const Settings = require('../models/Settings');
-
-
+const Notification = require('../models/Notification');
 
 // --- 1. REGISTER ROUTE ---
 router.post('/register', async (req, res) => {
   try {
-
     // Fetch global settings
-const settings = await Settings.findOne({ configId: 'global_config' });
+    const settings = await Settings.findOne({ configId: 'global_config' });
 
-if (settings) {
-  // Enforce Maintenance Mode (Block all new registrations)
-  if (settings.maintenanceMode) {
-    return res.status(503).json({ message: "Platform is currently under maintenance. Please try again later." });
-  }
+    if (settings) {
+      // Enforce Maintenance Mode (Block all new registrations)
+      if (settings.maintenanceMode) {
+        return res.status(503).json({ message: "Platform is currently under maintenance. Please try again later." });
+      }
 
-  // Enforce Tutor Registration Toggle
-  if (req.body.role === 'tutor' && !settings.allowTutorRegistrations) {
-    return res.status(403).json({ message: "Tutor registrations are currently closed by the Administrator." });
-  }
-}
+      // Enforce Tutor Registration Toggle
+      if (req.body.role === 'tutor' && !settings.allowTutorRegistrations) {
+        return res.status(403).json({ message: "Tutor registrations are currently closed by the Administrator." });
+      }
+    }
+
     // Destructure new fields
     const { name, email, password, role, headline, bio, skills } = req.body;
 
@@ -47,6 +46,19 @@ if (settings) {
     });
 
     await newUser.save();
+
+    // 🔥 INJECTED: WELCOME NOTIFICATION 🔥
+    const roleSpecificMessage = role === 'tutor' 
+      ? "Welcome to LearnHub! Head over to the Creator Studio to build your first course."
+      : "Welcome to LearnHub! We're thrilled to have you. Explore the catalog to start learning.";
+
+    Notification.create({
+      user: newUser._id,
+      title: "Welcome aboard! 🚀",
+      message: roleSpecificMessage,
+      type: "system"
+    }).catch(err => console.error("Notification Error:", err));
+
     res.status(201).json({ message: "User registered successfully" });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -56,24 +68,23 @@ if (settings) {
 // --- 2. LOGIN ROUTE ---
 router.post('/login', async (req, res) => {
   try {
-
-
-
     const { email, password } = req.body;
 
     // Check if user exists
     const user = await User.findOne({ email });
-        // Fetch global settings
-const settings = await Settings.findOne({ configId: 'global_config' });
+    
+    // Fetch global settings
+    const settings = await Settings.findOne({ configId: 'global_config' });
 
-if (settings && settings.maintenanceMode) {
-  // Allow Admins to bypass maintenance mode so they don't lock themselves out!
-  if (user.role !== 'admin') {
-    return res.status(503).json({ message: "Platform is currently under maintenance. Please try again later." });
-  }
-}
+    if (settings && settings.maintenanceMode) {
+      // Allow Admins to bypass maintenance mode so they don't lock themselves out!
+      if (user && user.role !== 'admin') {
+        return res.status(503).json({ message: "Platform is currently under maintenance. Please try again later." });
+      }
+    }
+
     if (!user) return res.status(404).json({ message: "User not found" });
-    // Inside your login function, right after const user = await User.findOne(...)
+    
     if (user && user.isActive === false) {
       return res.status(403).json({ message: "Your account has been suspended by an Administrator." });
     }
@@ -96,7 +107,8 @@ if (settings && settings.maintenanceMode) {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        profilePic: user.profilePicture // Add this so the frontend has their avatar instantly!
       }
     });
 
@@ -109,7 +121,6 @@ router.get('/me', protect, async (req, res) => {
   try {
     // Find user and POPULATE the course details
     const user = await User.findById(req.user.id).populate('enrolledCourses');
-
     res.json(user);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -126,6 +137,11 @@ router.put('/profile', protect, async (req, res) => {
       user.name = req.body.name || user.name;
       user.headline = req.body.headline || user.headline;
       user.bio = req.body.bio || user.bio;
+      
+      // Update profile picture if provided
+      if (req.body.profilePic !== undefined) {
+        user.profilePicture = req.body.profilePic;
+      }
 
       // If user is a tutor, they might update skills
       if (req.body.skills) {
@@ -142,7 +158,8 @@ router.put('/profile', protect, async (req, res) => {
         role: updatedUser.role,
         headline: updatedUser.headline,
         bio: updatedUser.bio,
-        skills: updatedUser.skills
+        skills: updatedUser.skills,
+        profilePic: updatedUser.profilePicture
       });
     } else {
       res.status(404).json({ message: 'User not found' });

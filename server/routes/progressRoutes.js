@@ -1,8 +1,11 @@
+// server/routes/progressRoutes.js
 const express = require('express');
 const router = express.Router();
 const Progress = require('../models/Progress');
+const Course = require('../models/Course'); 
+const User = require('../models/User');     
 const { protect } = require('../middleware/authMiddleware');
-
+const Notification = require('../models/Notification');
 
 // 1. GET ALL PROGRESS FOR USER (For MyLearning Page)
 router.get('/all', protect, async (req, res) => {
@@ -23,7 +26,6 @@ router.get('/:courseId', protect, async (req, res) => {
     });
 
     if (!progress) {
-      // Return empty progress if none exists
       return res.json({ completedLessons: [] });
     }
 
@@ -38,7 +40,7 @@ router.post('/mark-complete', protect, async (req, res) => {
   const { courseId, lessonId } = req.body;
 
   try {
-    // Find existing progress or create new one
+    // 1. Find existing progress or create new one
     let progress = await Progress.findOne({ 
       userId: req.user.id, 
       courseId: courseId 
@@ -52,10 +54,38 @@ router.post('/mark-complete', protect, async (req, res) => {
       });
     }
 
-    // Add lessonId if not already there
+    // 2. Add lessonId if not already there
+    let isNewlyCompleted = false;
     if (!progress.completedLessons.includes(lessonId)) {
       progress.completedLessons.push(lessonId);
       await progress.save();
+      isNewlyCompleted = true; // Flag to trigger course completion check
+    }
+
+    // 3. Check if the entire course is now complete
+    if (isNewlyCompleted) {
+      const course = await Course.findById(courseId);
+      
+      // Compare watched lessons vs total course lessons
+      if (course && course.lessons && progress.completedLessons.length === course.lessons.length) {
+        
+        const user = await User.findById(req.user.id);
+        
+        // Prevent duplicates in the completedCourses array
+        if (user && !user.completedCourses.includes(courseId)) {
+          user.completedCourses.push(courseId);
+          await user.save();
+
+          // Notification is now INSIDE the exact moment they finish the final lesson!
+          // We also removed 'await' so it doesn't slow down the video player moving to the next screen.
+          Notification.create({
+            user: req.user.id,
+            title: "Course Completed! 🏆",
+            message: `You just mastered "${course.title}". Check your profile to view your certificate!`,
+            type: "achievement"
+          }).catch(err => console.error("Notification Error:", err));
+        }
+      }
     }
 
     res.json(progress);
@@ -63,7 +93,5 @@ router.post('/mark-complete', protect, async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
-
-
 
 module.exports = router;

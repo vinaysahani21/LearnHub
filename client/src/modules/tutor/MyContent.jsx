@@ -18,6 +18,7 @@ const MyContent = () => {
 
   const fetchCourses = async () => {
     try {
+      setLoading(true);
       const token = localStorage.getItem('token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       
@@ -36,28 +37,29 @@ const MyContent = () => {
     course.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Signature Red Pulse Loader
+  // Premium Indigo Pulse Loader
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-[70vh] gap-4">
+      <div className="flex flex-col items-center justify-center h-[70vh] gap-4 transition-colors">
         <div className="relative flex h-10 w-10">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-10 w-10 bg-red-500"></span>
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-10 w-10 bg-indigo-500"></span>
         </div>
-        <p className="font-bold text-slate-400 animate-pulse tracking-widest uppercase text-xs">Loading Creator Studio...</p>
+        <p className="font-bold text-slate-400 dark:text-slate-500 animate-pulse tracking-widest uppercase text-xs">Loading Content Library...</p>
       </div>
     );
   }
 
+  // Premium Error State
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center py-32 text-center animate-in fade-in">
-        <div className="bg-red-50 p-6 rounded-full mb-6 border border-red-100 shadow-sm">
-            <AlertCircle size={48} className="text-red-500" />
+      <div className="flex flex-col items-center justify-center py-32 text-center animate-in fade-in transition-colors">
+        <div className="bg-rose-50 dark:bg-rose-500/10 p-6 rounded-full mb-6 border border-rose-100 dark:border-rose-500/20 shadow-sm">
+            <AlertCircle size={48} className="text-rose-500" />
         </div>
-        <h3 className="text-2xl font-black text-slate-900 tracking-tight">Sync Failed</h3>
-        <p className="text-slate-500 mt-2 mb-8 max-w-sm">{error}</p>
-        <button onClick={fetchCourses} className="px-8 py-3 bg-[#0a0f1c] text-white rounded-xl font-black uppercase tracking-widest text-xs hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20">
+        <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Sync Failed</h3>
+        <p className="text-slate-500 dark:text-slate-400 mt-2 mb-8 max-w-sm">{error}</p>
+        <button onClick={fetchCourses} className="px-8 py-3 bg-[#0a0f1c] dark:bg-indigo-600 text-white rounded-xl font-black uppercase tracking-widest text-xs hover:bg-slate-800 dark:hover:bg-indigo-500 transition-colors shadow-lg shadow-slate-900/20 dark:shadow-none active:scale-95">
           Retry Connection
         </button>
       </div>
@@ -68,32 +70,32 @@ const MyContent = () => {
     <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
       
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-slate-200/60 pb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-slate-200/60 dark:border-slate-800/60 pb-8 transition-colors">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+          <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
             Content Library <Video className="text-indigo-500" size={28} />
           </h1>
-          <p className="text-slate-500 font-medium mt-1">
-            Manage your intellectual property. You have <span className="text-indigo-600 font-black">{courses.length}</span> active projects.
+          <p className="text-slate-500 dark:text-slate-400 font-medium mt-2">
+            Manage your intellectual property. You have <span className="text-indigo-600 dark:text-indigo-400 font-black px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-500/10 rounded border border-indigo-100 dark:border-indigo-500/20 mx-1">{courses.length}</span> active projects.
           </p>
         </div>
         
         <div className="flex items-center gap-4 w-full md:w-auto">
           {courses.length > 0 && (
-            <div className="relative flex-1 md:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+            <div className="relative flex-1 md:w-64 group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-indigo-500 transition-colors" size={16} />
               <input 
                 type="text" 
                 placeholder="Search projects..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-sm"
+                className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-sm"
               />
             </div>
           )}
           <Link 
             to="/tutor/create-course" 
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-indigo-600/20 transition-all active:scale-95 whitespace-nowrap"
+            className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-indigo-600/20 transition-all active:scale-95 whitespace-nowrap"
           >
             <Plus size={16} /> New Project
           </Link>
@@ -102,41 +104,46 @@ const MyContent = () => {
 
       {/* COURSE GRID */}
       {courses.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 bg-indigo-50/50 rounded-3xl border border-dashed border-indigo-200 text-center">
-          <div className="bg-white p-5 rounded-2xl shadow-sm mb-6 border border-indigo-100">
-            <Sparkles className="text-indigo-500 w-10 h-10" />
+        <div className="flex flex-col items-center justify-center py-24 bg-indigo-50/50 dark:bg-indigo-500/5 rounded-3xl border border-dashed border-indigo-200 dark:border-indigo-500/20 text-center transition-colors">
+          <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm mb-6 border border-indigo-100 dark:border-indigo-500/20">
+            <Sparkles className="text-indigo-500 dark:text-indigo-400 w-10 h-10" />
           </div>
-          <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-2">Your canvas is empty</h3>
-          <p className="text-slate-500 mb-8 max-w-sm leading-relaxed">
+          <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2">Your canvas is empty</h3>
+          <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-sm leading-relaxed">
             Every great instructor starts here. Draft your first course and start sharing your knowledge.
           </p>
           <Link 
             to="/tutor/create-course" 
-            className="bg-[#0a0f1c] hover:bg-slate-800 text-white px-8 py-3.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-xl shadow-slate-900/10 transition-all flex items-center gap-2"
+            className="bg-[#0a0f1c] dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-500 text-white px-8 py-3.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-xl shadow-slate-900/10 dark:shadow-none transition-all flex items-center gap-2 active:scale-95"
           >
             <Plus size={16} /> Create First Course
           </Link>
         </div>
       ) : filteredCourses.length === 0 ? (
-        <div className="text-center py-20 bg-slate-50 rounded-3xl border border-slate-200 border-dashed">
-           <Search className="w-10 h-10 text-slate-300 mx-auto mb-4" />
-           <p className="text-slate-500 font-bold">No projects match your search.</p>
+        <div className="text-center py-20 bg-slate-50 dark:bg-slate-900/50 rounded-3xl border border-slate-200 dark:border-slate-800 border-dashed transition-colors">
+           <Search className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
+           <p className="text-slate-500 dark:text-slate-400 font-bold">No projects match your search.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCourses.map((course) => (
-            <div key={course._id} className="group bg-white border border-slate-200/60 rounded-2xl overflow-hidden hover:shadow-xl hover:shadow-indigo-900/5 hover:border-indigo-200 transition-all duration-300 flex flex-col">
+            <div key={course._id} className="group bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl overflow-hidden hover:shadow-2xl hover:shadow-indigo-900/10 dark:hover:shadow-none hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-all duration-300 flex flex-col">
               
               {/* Thumbnail Area */}
-              <div className="h-48 overflow-hidden relative bg-slate-100">
+              <div className="h-48 overflow-hidden relative bg-slate-100 dark:bg-slate-800">
                 <img 
                   src={course.thumbnail} 
                   alt={course.title} 
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1c]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                
                 <div className="absolute top-4 right-4">
-                  <span className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm border ${course.isActive ? 'bg-emerald-500/90 text-white border-emerald-400/50 backdrop-blur-sm' : 'bg-white/90 text-slate-600 border-slate-200 backdrop-blur-sm'}`}>
+                  <span className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm border ${
+                    course.isActive 
+                      ? 'bg-emerald-500/90 text-white border-emerald-400/50 backdrop-blur-md shadow-emerald-500/20' 
+                      : 'bg-white/90 dark:bg-slate-900/90 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 backdrop-blur-md'
+                  }`}>
                     {course.isActive ? 'Published' : 'Draft'}
                   </span>
                 </div>
@@ -145,25 +152,26 @@ const MyContent = () => {
               {/* Course Details */}
               <div className="p-6 flex-1 flex flex-col">
                 <div className="mb-6">
-                  <h3 className="text-lg font-black text-slate-900 tracking-tight line-clamp-1 mb-2 group-hover:text-indigo-600 transition-colors">
+                  <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight line-clamp-2 mb-4 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors leading-snug">
                     {course.title}
                   </h3>
-                  <div className="flex items-center gap-4 text-xs text-slate-500 font-bold bg-slate-50 w-fit px-3 py-1.5 rounded-lg border border-slate-100">
-                    <span className="flex items-center gap-1.5"><BookOpen size={14} className="text-indigo-400" /> {course.lessons?.length || 0} Modules</span>
-                    <div className="w-px h-3 bg-slate-300"></div>
-                    <span className="flex items-center gap-1.5"><Users size={14} className="text-orange-400" /> {course.enrolledStudents?.length || 0} Students</span>
+                  <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400 font-bold bg-slate-50 dark:bg-slate-800/50 w-fit px-3 py-1.5 rounded-xl border border-slate-100 dark:border-slate-700/50">
+                    <span className="flex items-center gap-1.5"><BookOpen size={14} className="text-indigo-500 dark:text-indigo-400" /> {course.lessons?.length || 0} Modules</span>
+                    <div className="w-px h-3 bg-slate-300 dark:bg-slate-600"></div>
+                    <span className="flex items-center gap-1.5"><Users size={14} className="text-orange-500 dark:text-orange-400" /> {course.enrolledStudents?.length || 0} Students</span>
                   </div>
                 </div>
 
                 {/* Footer Actions */}
-                <div className="mt-auto pt-5 border-t border-slate-100 flex items-center justify-between">
-                  <div className="flex items-center gap-1 text-slate-900 font-black text-xl tracking-tighter">
-                    <IndianRupee size={18} className="text-emerald-500" /> {course.price}
+                <div className="mt-auto pt-5 border-t border-slate-100 dark:border-slate-800/50 flex items-center justify-between">
+                  <div className="flex items-center gap-1 text-slate-900 dark:text-white font-black text-xl tracking-tighter">
+                    <IndianRupee size={18} className="text-emerald-500 dark:text-emerald-400" /> 
+                    {course.price === 0 ? "Free" : course.price}
                   </div>
                   
                   <Link 
                     to={`/tutor/course/${course._id}/manager`} 
-                    className="flex items-center gap-2 px-5 py-2.5 bg-slate-50 hover:bg-indigo-600 text-slate-600 hover:text-white border border-slate-200 hover:border-indigo-600 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-sm"
+                    className="flex items-center gap-2 px-5 py-2.5 bg-slate-50 dark:bg-slate-800 hover:bg-indigo-600 dark:hover:bg-indigo-500 text-slate-600 dark:text-slate-300 hover:text-white border border-slate-200 dark:border-slate-700 hover:border-indigo-600 dark:hover:border-indigo-500 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-sm active:scale-95"
                   >
                     <Edit2 size={14} /> Open Studio
                   </Link>

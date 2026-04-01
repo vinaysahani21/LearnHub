@@ -42,6 +42,7 @@ import TutorPayouts from "./modules/tutor/TutorPayouts.jsx";
 import TutorProfile from "./modules/tutor/TutorProfile.jsx";
 import TutorSettings from "./modules/tutor/Settings.jsx";
 import TutorCoursePreview from "./modules/tutor/TutorCoursePreview.jsx";
+import EditLesson from "./modules/tutor/EditLesson.jsx";
 
 // ==========================================
 // ADMIN PANEL (ADMIN_OS)
@@ -56,6 +57,7 @@ import AdminOrders from "./modules/admin/AdminOrders.jsx";
 import PayoutManagement from "./modules/admin/PayoutManagement.jsx";
 import PlatformSettings from "./modules/admin/PlatformSettings.jsx";
 import TutorAnalytics from "./modules/tutor/TutorAnalytics.jsx";
+import AdminBroadcast from "./modules/admin/AdminBroadcast.jsx";
 
 // ==========================================
 // ROUTE PROTECTOR
@@ -79,11 +81,12 @@ function App() {
   return (
     <Router>
       <Routes>
-        
+
         {/* PUBLIC ROUTES */}
         <Route path="/" element={<PublicLayout />}>
           <Route index element={<LandingPage />} />
-<Route path="courses" element={<ExploreCourses />} />        </Route>
+          <Route path="courses" element={<ExploreCourses />} />
+        </Route>
 
         {/* AUTH ROUTES */}
         <Route path="/auth" element={<AuthLayout />}>
@@ -115,10 +118,11 @@ function App() {
             <Route path="course/:id/manager" element={<CourseManager />} />
             <Route path="course/:id/preview" element={<TutorCoursePreview />} />
             <Route path="course/:id/add-lesson" element={<AddLesson />} />
+            <Route path="/tutor/course/:courseId/edit-lesson/:lessonId" element={<EditLesson />} />
             <Route path="students" element={<MyStudents />} />  {/* <-- FIXED THIS LINE */}
             <Route path="payouts" element={<TutorPayouts />} />
-            <Route path="analytics" element={ <TutorAnalytics />} />
-            <Route path="profile" element={<TutorProfile/>} />
+            <Route path="analytics" element={<TutorAnalytics />} />
+            <Route path="profile" element={<TutorProfile />} />
             <Route path="settings" element={<TutorSettings />} />
           </Route>
         </Route>
@@ -134,12 +138,13 @@ function App() {
             <Route path="finance" element={<AdminOrders />} />
             <Route path="payouts" element={<PayoutManagement />} />
             <Route path="settings" element={<PlatformSettings />} />
+            <Route path="broadcast" element={<AdminBroadcast />} />
           </Route>
         </Route>
 
         {/* Catch-all Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
-        
+
       </Routes>
     </Router>
   );

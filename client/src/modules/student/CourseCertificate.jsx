@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -9,6 +9,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 const CourseCertificate = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation(); // 🔥 Added to read URL parameters
   const { user } = useAuth();
   const certificateRef = useRef(null);
 
@@ -16,6 +17,11 @@ const CourseCertificate = () => {
   const [loading, setLoading] = useState(true);
   const [valid, setValid] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+
+  // 🔥 LOGIC 1: Parse the URL for date and fullscreen flags
+  const queryParams = new URLSearchParams(location.search);
+  const passedDate = queryParams.get('date');
+  const isFullscreen = queryParams.get('fullscreen') === 'true';
 
   useEffect(() => {
     const verifyCertificate = async () => {
@@ -54,9 +60,8 @@ const CourseCertificate = () => {
     try {
       const element = certificateRef.current;
       
-      // High-fidelity render settings
       const canvas = await html2canvas(element, { 
-        scale: 4, // Ultra-HD quality
+        scale: 4, 
         useCORS: true, 
         backgroundColor: '#ffffff',
         logging: false
@@ -83,34 +88,51 @@ const CourseCertificate = () => {
       <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Verifying Credentials...</p>
     </div>
   );
+  
   if (!valid || !course) return null;
 
   const courseIdStr = (course._id || course.id || "000000").toString();
   const userIdStr = (user?._id || user?.id || "000000").toString();
   const certificateId = `LH-${courseIdStr.substring(0, 6).toUpperCase()}-${userIdStr.substring(0, 6).toUpperCase()}`;
-  const issueDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  
+  // 🔥 LOGIC 2: Use passed completion date, fallback to today if accessed directly without param
+  const dateObj = passedDate ? new Date(passedDate) : new Date();
+  const issueDate = dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
   return (
-    <div className="min-h-screen bg-[#020617] flex flex-col items-center py-10 px-4 md:px-8 font-sans selection:bg-sky-500/30">
+    <div className={`min-h-screen bg-[#020617] flex flex-col items-center px-4 md:px-8 font-sans selection:bg-sky-500/30 ${isFullscreen ? 'py-0 justify-center' : 'py-10'}`}>
       
-      {/* --- TOP CONTROLS --- */}
-      <div className="w-full max-w-[1000px] flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
-        <button onClick={() => navigate('/student/my-learning')} className="flex items-center gap-2 text-slate-400 hover:text-white text-sm font-black uppercase tracking-widest transition-colors group">
-          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> Return to Learning
-        </button>
-        <button 
-          onClick={handleDownload} 
-          disabled={isDownloading}
-          className="bg-sky-500 hover:bg-sky-400 text-[#0a0f1c] px-8 py-3.5 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 transition-all shadow-lg shadow-sky-500/20 active:scale-95 disabled:opacity-70"
-        >
-          {isDownloading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />} 
-          {isDownloading ? 'Generating High-Res PDF...' : 'Download Official PDF'}
-        </button>
-      </div>
+      {/* 🔥 LOGIC 3: If loaded inside the iframe modal, hide the Sidebar, Header, and layout margins automatically! */}
+      {isFullscreen && (
+        <style>{`
+          /* Targets StudentLayout elements to hide them from the iframe view */
+          aside { display: none !important; }
+          header { display: none !important; }
+          .md\\:ml-64 { margin-left: 0 !important; }
+          main { padding: 0 !important; max-width: 100% !important; }
+          body { background: #020617 !important; }
+        `}</style>
+      )}
+
+      {/* --- TOP CONTROLS (Hidden if in Fullscreen Modal) --- */}
+      {!isFullscreen && (
+        <div className="w-full max-w-[1000px] flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
+          <button onClick={() => navigate('/student/my-learning')} className="flex items-center gap-2 text-slate-400 hover:text-white text-sm font-black uppercase tracking-widest transition-colors group">
+            <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> Return to Learning
+          </button>
+          <button 
+            onClick={handleDownload} 
+            disabled={isDownloading}
+            className="bg-sky-500 hover:bg-sky-400 text-[#0a0f1c] px-8 py-3.5 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 transition-all shadow-lg shadow-sky-500/20 active:scale-95 disabled:opacity-70"
+          >
+            {isDownloading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />} 
+            {isDownloading ? 'Generating High-Res PDF...' : 'Download Official PDF'}
+          </button>
+        </div>
+      )}
 
       {/* --- CERTIFICATE RENDER CANVAS --- */}
-      {/* We use a wrapper to handle overflow on small screens, but the canvas itself stays fixed at A4 aspect ratio (1000x707) */}
-      <div className="w-full overflow-x-auto custom-scrollbar flex justify-center pb-10">
+      <div className={`w-full overflow-x-auto custom-scrollbar flex justify-center ${isFullscreen ? 'pb-0 scale-[0.85] sm:scale-100 origin-center' : 'pb-10'}`}>
         
         <div 
           ref={certificateRef}
@@ -172,6 +194,7 @@ const CourseCertificate = () => {
               
               {/* Date & Verification */}
               <div className="text-center w-48">
+                {/* 🔥 LOGIC 4: Renders the precise date they finished the course! */}
                 <p className="text-lg text-slate-900 font-bold mb-1" style={{ fontFamily: '"Playfair Display", Georgia, serif' }}>{issueDate}</p>
                 <div className="border-t border-slate-400 pt-2">
                   <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Date of Issue</p>
@@ -181,12 +204,10 @@ const CourseCertificate = () => {
 
               {/* 🌟 PREMIUM GOLD SEAL 🌟 */}
               <div className="absolute left-1/2 -translate-x-1/2 bottom-0 flex items-center justify-center translate-y-4">
-                 {/* Outer Jagged Edge (Simulated with rotated squares) */}
                  <div className="absolute w-28 h-28 bg-amber-500 rotate-12 shadow-xl"></div>
                  <div className="absolute w-28 h-28 bg-amber-600 rotate-45 shadow-xl"></div>
                  <div className="absolute w-28 h-28 bg-amber-400 rotate-[70deg] shadow-xl"></div>
                  
-                 {/* Inner Rings */}
                  <div className="relative w-28 h-28 bg-gradient-to-br from-amber-300 via-amber-500 to-amber-700 rounded-full flex flex-col items-center justify-center shadow-inner border-2 border-amber-200">
                     <div className="w-24 h-24 rounded-full border-[2px] border-dashed border-amber-100 flex flex-col items-center justify-center bg-gradient-to-br from-amber-400 to-amber-600">
                        <ShieldCheck className="text-white w-8 h-8 mb-1 opacity-90" />

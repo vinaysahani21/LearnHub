@@ -2,8 +2,8 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { 
-  ArrowLeft, PlayCircle, ListChecks, HelpCircle,
-  ChevronRight, MonitorPlay, Clock, Edit2, Eye
+  ArrowLeft, ListChecks, ShieldCheck,
+  ChevronRight, MonitorPlay, Clock
 } from 'lucide-react';
 
 const TutorCoursePreview = () => {
@@ -20,7 +20,7 @@ const TutorCoursePreview = () => {
   const fetchCourse = async () => {
     try {
       const token = localStorage.getItem('token');
-      // Tutors can fetch their own courses via the standard endpoint
+      // Tutors can use the standard course fetch endpoint
       const res = await axios.get(`http://localhost:5000/api/courses/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -40,7 +40,7 @@ const TutorCoursePreview = () => {
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
           <span className="relative inline-flex rounded-full h-10 w-10 bg-indigo-500"></span>
         </div>
-        <p className="font-black text-slate-500 tracking-widest uppercase text-xs">Initializing Studio Player...</p>
+        <p className="font-black text-slate-500 tracking-widest uppercase text-xs">Loading Studio Preview...</p>
       </div>
     );
   }
@@ -51,29 +51,24 @@ const TutorCoursePreview = () => {
       {/* CINEMATIC HEADER */}
       <div className="bg-[#0a0f1c]/80 backdrop-blur-xl border-b border-slate-800/50 px-8 py-4 flex items-center justify-between shrink-0 z-20">
         <div className="flex items-center gap-6">
+          {/* Returns tutor back to the Course Manager studio */}
           <Link to={`/tutor/course/${id}/manager`} className="group p-2 bg-slate-800/50 rounded-xl hover:bg-indigo-600 transition-all duration-300">
             <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
           </Link>
           <div>
             <div className="flex items-center gap-3">
-              <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">Creator Preview</span>
+              <span className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em]">Studio Preview</span>
               <ChevronRight size={12} className="text-slate-600" />
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] truncate max-w-[200px]">{course.title}</span>
             </div>
             <h1 className="text-lg font-black tracking-tight mt-1 flex items-center gap-2">
-              <MonitorPlay size={18} className="text-indigo-500" /> {currentLesson?.title || 'Course Player'}
+              <MonitorPlay size={18} className="text-indigo-400" /> {currentLesson?.title || 'Course Player'}
             </h1>
           </div>
         </div>
-        
-        <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3 bg-indigo-500/10 px-4 py-2 rounded-xl border border-indigo-500/20 shadow-lg shadow-indigo-900/10 hidden sm:flex">
-            <Eye size={16} className="text-indigo-400" />
-            <span className="text-[10px] font-black text-indigo-300 uppercase tracking-widest">Student View</span>
-            </div>
-            <Link to={`/tutor/course/${id}/manager`} className="flex items-center gap-2 bg-white text-[#0a0f1c] px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-50 transition-colors">
-                <Edit2 size={14} /> Edit Mode
-            </Link>
+        <div className="flex items-center gap-3 bg-indigo-500/10 px-4 py-2 rounded-xl border border-indigo-500/20 shadow-lg shadow-indigo-900/10">
+          <ShieldCheck size={16} className="text-indigo-400" />
+          <span className="text-[10px] font-black text-indigo-300 uppercase tracking-widest">Creator Mode</span>
         </div>
       </div>
 
@@ -82,10 +77,7 @@ const TutorCoursePreview = () => {
         {/* PLAYER ENGINE */}
         <div className="flex-1 flex flex-col relative bg-black/40">
           {!currentLesson ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-600">
-                <MonitorPlay size={48} className="mb-4 opacity-50" />
-                <span className="font-black uppercase tracking-widest animate-pulse">Select module to preview</span>
-            </div>
+            <div className="absolute inset-0 flex items-center justify-center text-slate-600 font-black uppercase tracking-widest animate-pulse">Select module</div>
           ) : currentLesson.type === 'video' ? (
             <video 
               ref={videoRef}
@@ -103,7 +95,7 @@ const TutorCoursePreview = () => {
                       <div className="p-3 bg-orange-500 rounded-2xl text-white shadow-lg shadow-orange-900/20"><ListChecks size={28} /></div>
                       <h2 className="text-3xl font-black tracking-tighter italic">ASSESSMENT PREVIEW</h2>
                    </div>
-                   <p className="text-orange-200/60 font-bold text-sm tracking-widest uppercase ml-1">Testing module: {currentLesson.title}</p>
+                   <p className="text-orange-200/60 font-bold text-sm tracking-widest uppercase ml-1">Evaluating module: {currentLesson.title}</p>
                 </div>
 
                 <div className="space-y-6">
@@ -136,7 +128,7 @@ const TutorCoursePreview = () => {
             <h3 className="font-black text-white text-xl tracking-tight uppercase flex items-center gap-2">
               Curriculum <Clock size={16} className="text-slate-500"/>
             </h3>
-            <p className="text-[10px] font-black text-slate-500 mt-2 uppercase tracking-[0.2em]">{course.lessons?.length || 0} Total Modules</p>
+            <p className="text-[10px] font-black text-slate-500 mt-2 uppercase tracking-[0.2em]">{course.lessons?.length || 0} Total Modules Found</p>
           </div>
           
           <div className="overflow-y-auto flex-1 p-4 space-y-2 custom-scrollbar">

@@ -1,3 +1,4 @@
+// server/routes/adminRoutes.js
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
@@ -5,9 +6,10 @@ const Course = require('../models/Course');
 const Order = require('../models/Order'); 
 const { protect, adminOnly } = require('../middleware/authMiddleware');
 const Settings = require('../models/Settings'); 
+const Broadcast = require('../models/Broadcast');
 const Payout = require('../models/Payout'); 
-const Category = require('../models/Category'); // Import at the top!
-
+const Category = require('../models/Category'); 
+const Notification = require('../models/Notification');
 
 // 1. GET DASHBOARD STATS
 router.get('/stats', protect, adminOnly, async (req, res) => {
@@ -39,18 +41,15 @@ router.get('/users', protect, adminOnly, async (req, res) => {
     const users = await User.find().select('-password').lean().sort({ createdAt: -1 });
     const courses = await Course.find().select('tutor enrolledStudents').lean();
 
-    // Map through users and calculate their stats dynamically
     const enrichedUsers = users.map(user => {
-      // If Tutor: Count how many courses they created
       const createdCount = courses.filter(c => c.tutor?.toString() === user._id.toString()).length;
-      // If Student: Count how many courses they are inside the enrolledStudents array
       const enrolledCount = courses.filter(c => c.enrolledStudents?.some(s => s.toString() === user._id.toString())).length;
       
       return { 
         ...user, 
         createdCount, 
         enrolledCount,
-        isActive: user.isActive !== false // Defaults to true if undefined
+        isActive: user.isActive !== false 
       };
     });
 
@@ -79,11 +78,10 @@ router.delete('/users/:id', protect, adminOnly, async (req, res) => {
   }
 });
 
-
 router.get('/courses', protect, adminOnly, async (req, res) => {
   try {
     const courses = await Course.find()
-      .populate('tutor', 'name email') // Gets the tutor's details
+      .populate('tutor', 'name email') 
       .sort({ createdAt: -1 });
     res.json(courses);
   } catch (err) {
@@ -117,7 +115,7 @@ router.get('/orders', protect, adminOnly, async (req, res) => {
     const orders = await Order.find()
       .populate('user', 'name email')
       .populate('course', 'title price')
-      .sort({ createdAt: -1 }); // Newest first
+      .sort({ createdAt: -1 }); 
       
     res.json(orders);
   } catch (err) {
@@ -137,16 +135,24 @@ router.put('/users/:id/toggle-status', protect, adminOnly, async (req, res) => {
       return res.status(403).json({ message: 'Cannot modify another admin account' });
     }
 
-    // Flip the status
     user.isActive = !user.isActive;
     await user.save();
     
+    // INJECTED: NOTIFY USER OF ACCOUNT STATUS CHANGE 
+    if (user.isActive) {
+      Notification.create({
+        user: user._id,
+        title: "Account Activated ✅",
+        message: "Your account has been fully restored by the administration team.",
+        type: "system"
+      }).catch(err => console.error(err));
+    }
+
     res.json({ message: `User account has been ${user.isActive ? 'activated' : 'suspended'}.`, isActive: user.isActive });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
-
 
 // ==========================================
 // 9. GET PLATFORM SETTINGS
@@ -154,12 +160,7 @@ router.put('/users/:id/toggle-status', protect, adminOnly, async (req, res) => {
 router.get('/settings', protect, adminOnly, async (req, res) => {
   try {
     let settings = await Settings.findOne({ configId: 'global_config' });
-    
-    // If it's the first time booting up, create the default settings
-    if (!settings) {
-      settings = await Settings.create({});
-    }
-    
+    if (!settings) settings = await Settings.create({});
     res.json(settings);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -176,7 +177,7 @@ router.put('/settings', protect, adminOnly, async (req, res) => {
     const settings = await Settings.findOneAndUpdate(
       { configId: 'global_config' },
       { maintenanceMode, allowTutorRegistrations, platformFeePercentage },
-      { new: true, upsert: true } // upsert ensures it creates one if missing
+      { new: true, upsert: true } 
     );
     
     res.json({ message: 'Platform settings updated successfully', settings });
@@ -192,7 +193,7 @@ router.get('/payouts', protect, adminOnly, async (req, res) => {
   try {
     const payouts = await Payout.find()
       .populate('tutor', 'name email')
-      .sort({ createdAt: -1 }); // Newest requests first
+      .sort({ createdAt: -1 }); 
       
     res.json(payouts);
   } catch (err) {
@@ -207,7 +208,6 @@ router.put('/payouts/:id', protect, adminOnly, async (req, res) => {
   try {
     const { status, adminNotes } = req.body;
     
-    // Ensure valid status
     if (!['approved', 'rejected'].includes(status)) {
       return res.status(400).json({ message: 'Invalid status update' });
     }
@@ -216,12 +216,23 @@ router.put('/payouts/:id', protect, adminOnly, async (req, res) => {
     if (!payout) return res.status(404).json({ message: 'Payout request not found' });
     if (payout.status !== 'pending') return res.status(400).json({ message: 'Payout has already been processed' });
 
-    // Update the payout
     payout.status = status;
     payout.adminNotes = adminNotes || '';
     payout.processedAt = Date.now();
     
     await payout.save();
+
+    // INJECTED: NOTIFY TUTOR ABOUT PAYOUT DECISION 
+    const message = status === 'approved' 
+      ? `Good news! Your payout of ₹${payout.amount} has been approved and processed.`
+      : `Your payout of ₹${payout.amount} was rejected. Note: ${adminNotes || 'Please contact support.'}`;
+
+    Notification.create({
+      user: payout.tutor,
+      title: `Payout ${status.toUpperCase()} 💳`,
+      message: message,
+      type: "payment"
+    }).catch(err => console.error("Notification Error:", err));
 
     res.json({ message: `Payout successfully ${status}`, payout });
   } catch (err) {
@@ -230,14 +241,25 @@ router.put('/payouts/:id', protect, adminOnly, async (req, res) => {
 });
 
 // ==========================================
-// 13. GET ALL CATEGORIES
+// 13. GET ALL CATEGORIES (Enriched with Course Counts)
 // ==========================================
 router.get('/categories', async (req, res) => {
-  // Note: We don't use 'protect' or 'adminOnly' here because the frontend 
-  // needs to fetch these for the Tutor's "Create Course" dropdown too!
   try {
-    const categories = await Category.find().sort({ name: 1 }); // Sort A-Z
-    res.json(categories);
+    // 1. Fetch all categories and courses using .lean() for faster processing
+    const categories = await Category.find().lean().sort({ name: 1 }); 
+    const courses = await Course.find().select('category').lean();
+
+    // 2. Map through categories and count matching courses
+    const enrichedCategories = categories.map(cat => {
+      // Count how many courses have this exact category name
+      const courseCount = courses.filter(c => c.category === cat.name).length;
+      return { 
+        ...cat, 
+        courseCount 
+      };
+    });
+
+    res.json(enrichedCategories);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -271,6 +293,91 @@ router.delete('/categories/:id', protect, adminOnly, async (req, res) => {
 
     await Category.findByIdAndDelete(req.params.id);
     res.json({ message: 'Category deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ==========================================
+// 16. NEW: GLOBAL BROADCAST NOTIFICATION 
+// ==========================================
+// ==========================================
+// DEPLOY GLOBAL BROADCAST
+// ==========================================
+router.post('/broadcast', protect, adminOnly, async (req, res) => {
+  try {
+    const { title, message, targetRole, priority } = req.body;
+
+    // 1. Save the broadcast to the historical ledger
+    await Broadcast.create({
+      title,
+      message,
+      targetRole,
+      priority
+    });
+
+    // 2. Determine who receives this broadcast
+    let query = {};
+    if (targetRole !== 'all') {
+      query.role = targetRole;
+    }
+    
+    // Fetch only the IDs to save memory
+    const users = await User.find(query).select('_id');
+
+    // 3. Create the actual notifications in bulk
+    const notifications = users.map(user => ({
+      user: user._id,
+      title: title,
+      message: message,
+      // If you have a 'type' or 'priority' field in your Notification schema, you can pass it here
+    }));
+
+    // Use insertMany for massive performance boost when sending to thousands of users
+    if (notifications.length > 0) {
+      await Notification.insertMany(notifications);
+    }
+
+    res.status(200).json({ message: `Broadcast successfully deployed to ${users.length} users.` });
+  } catch (err) {
+    console.error("Broadcast Error:", err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ==========================================
+// GET BROADCAST HISTORY
+// ==========================================
+router.get('/broadcast-history', protect, adminOnly, async (req, res) => {
+  try {
+    // Fetch the 50 most recent broadcasts
+    const history = await Broadcast.find().sort({ createdAt: -1 }).limit(50);
+    res.json(history);
+  } catch (err) {
+    console.error("Broadcast History Error:", err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ==========================================
+// 17. GET NOTIFICATIONS (FOR ADMIN PANEL BELL)
+// ==========================================
+router.get('/notifications', protect, adminOnly, async (req, res) => {
+  try {
+    const notifications = await Notification.find({ user: req.user._id }).sort({ createdAt: -1 }).limit(20);
+    res.json(notifications);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ==========================================
+// 18. MARK NOTIFICATIONS AS READ
+// ==========================================
+router.patch('/notifications/read-all', protect, adminOnly, async (req, res) => {
+  try {
+    await Notification.updateMany({ user: req.user._id, isRead: false }, { $set: { isRead: true } });
+    res.json({ message: 'All notifications marked as read' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
