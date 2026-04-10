@@ -77,7 +77,7 @@ const TutorDashboard = () => {
         {/* Net Earnings - Highlighted Hero Card */}
         <div className="bg-gradient-to-br from-[#0f172a] to-[#020617] dark:from-indigo-950 dark:to-[#020617] p-6 rounded-3xl shadow-xl shadow-slate-900/10 dark:shadow-none border border-slate-800 text-white relative overflow-hidden group transition-all">
           <div className="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
-            <DollarSign size={100} />
+            <IndianRupee size={100} />
           </div>
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20 mix-blend-overlay"></div>
           
