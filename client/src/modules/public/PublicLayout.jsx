@@ -1,5 +1,5 @@
 import { Outlet, Link } from 'react-router-dom';
-import { Search, Menu, X, Rocket, ChevronRight, Github, Twitter, Linkedin } from 'lucide-react';
+import { Search, Menu, X, Rocket, ChevronRight, Github, Twitter, Linkedin, Sparkles } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 const PublicLayout = () => {
@@ -24,7 +24,7 @@ const PublicLayout = () => {
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2.5 group">
               <div className="bg-[#0a0f1c] p-2 rounded-xl group-hover:scale-105 transition-transform shadow-lg shadow-slate-900/20">
-                <Rocket className="text-white w-5 h-5" />
+                <Sparkles className="text-white w-5 h-5" />
               </div>
               <span className="text-2xl font-black tracking-tighter text-slate-900">
                 Learn<span className="text-indigo-600">Hub</span>

@@ -44,7 +44,7 @@ const Register = () => {
             <input
               name="name" type="text" required value={formData.name} onChange={handleChange}
               className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none text-slate-900 font-bold"
-              placeholder="John Doe"
+              placeholder="Your Name"
             />
           </div>
         </div>

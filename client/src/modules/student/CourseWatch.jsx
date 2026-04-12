@@ -162,7 +162,7 @@ const CourseWatch = () => {
     <div className="flex flex-col h-screen bg-[#020617] text-slate-200 font-sans overflow-hidden selection:bg-sky-500/30">
       
       {/* 1. CINEMATIC HEADER */}
-      <div className="bg-[#0a0f1c]/90 backdrop-blur-xl border-b border-white/5 px-6 py-4 flex items-center gap-6 shrink-0 z-20">
+      <div className="bg-[#0a0f1c]/90 backdrop-blur-xl border-b border-white/5 px-6 py-4 flex items-center gap-6 shrink-0 z-10">
         <Link to="/student/my-learning" className="group p-2 bg-white/5 rounded-xl hover:bg-sky-500 transition-all duration-300">
           <ArrowLeft size={20} className="text-slate-300 group-hover:text-[#0a0f1c] group-hover:-translate-x-1 transition-all" />
         </Link>

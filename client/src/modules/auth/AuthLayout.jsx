@@ -1,5 +1,5 @@
 import { Outlet, Link } from 'react-router-dom';
-import { Rocket, Quote } from 'lucide-react';
+import { Rocket, Quote, Sparkles } from 'lucide-react';
 
 const AuthLayout = () => {
   return (
@@ -15,7 +15,7 @@ const AuthLayout = () => {
         <div className="relative z-10">
           <Link to="/" className="flex items-center gap-3 w-fit group">
             <div className="bg-indigo-600 p-2.5 rounded-xl shadow-lg shadow-indigo-900/50 group-hover:scale-105 transition-transform">
-              <Rocket className="text-white w-6 h-6" />
+              <Sparkles className="text-white w-6 h-6" />
             </div>
             <span className="text-3xl font-black tracking-tighter text-white">
               Learn<span className="text-indigo-500">Hub</span>

@@ -28,6 +28,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    localStorage.removeItem('theme'); 
     setUser(null);
     // Optional: Redirect to home is handled by the component calling logout
   };

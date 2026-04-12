@@ -274,12 +274,12 @@ const PlatformSettings = () => {
       </div>
 
       {/* FOOTER INFO */}
-      <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center gap-3 transition-colors">
+      {/* <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center gap-3 transition-colors">
           <AlertTriangle size={18} className="text-slate-400 dark:text-slate-500 shrink-0" />
           <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.1em] leading-relaxed">
              System Note: State modifications execute immediately. Ensure your backend <code className="bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded text-red-500 dark:text-red-400">Settings</code> MongoDB Schema is configured to accept <code className="bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded text-indigo-500 dark:text-indigo-400">autoApproveCourses</code> and <code className="bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded text-emerald-600 dark:text-emerald-400">supportEmail</code> payloads before pushing changes.
           </p>
-      </div>
+      </div> */}
 
     </div>
   );

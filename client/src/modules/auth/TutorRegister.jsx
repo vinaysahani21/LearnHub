@@ -113,7 +113,7 @@ const TutorRegister = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                 <div className="relative">
                   <User className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-                  <input name="name" type="text" required onChange={handleChange} className="pl-10 w-full py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all" placeholder="John Doe" />
+                  <input name="name" type="text" required onChange={handleChange} className="pl-10 w-full py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all" placeholder="Your Name" />
                 </div>
               </div>
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowRight, Play, Zap, Users, Shield, Loader2, Star, Clock, ArrowUpRight } from 'lucide-react';
+import { ArrowRight, Play, Zap, Users, Shield, Loader2, Star, Clock, ArrowUpRight, Sparkles } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
