@@ -1,69 +1,78 @@
 const Course = require('../models/Course');
+const cloudinary = require('../utils/cloudinary');
 
 // @desc    Add a lesson (Video or Quiz) to a course
 // @route   POST /api/courses/:id/lessons
 // @access  Private (Tutor only)
 exports.addLesson = async (req, res) => {
   try {
-    // 1. Find the course
     const course = await Course.findById(req.params.id);
 
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
     }
 
-    // 2. Authorization Check (Only the Course Owner can add lessons)
     if (course.tutor.toString() !== req.user.id) {
       return res.status(401).json({ message: 'Not authorized to update this course' });
     }
 
-    // 3. Extract Data
-    // Note: If it's a video upload, req.body fields come from Multer.
-    // If it's a quiz (JSON), req.body comes from express.json().
     const { title, type, questions } = req.body;
 
-    // 4. Logic Switch based on Lesson Type
-    let newLesson = {};
-
     if (type === 'quiz') {
-      // === QUIZ LOGIC ===
-      // Validate that questions exist
+      // === QUIZ LOGIC (Unchanged) ===
       if (!questions || questions.length === 0) {
         return res.status(400).json({ message: "Quiz must have at least one question." });
       }
 
-      newLesson = {
+      const newLesson = {
         title,
         type: 'quiz',
-        questions: questions, // Store the array of questions
-        videoUrl: null,       // No video for quizzes
+        questions: questions, 
+        videoUrl: null,       
         duration: 0
       };
 
+      course.lessons.push(newLesson);
+      await course.save();
+      return res.status(201).json(course);
+
     } else {
-      // === VIDEO LOGIC (Default) ===
-      // Validate that a file was uploaded
+      // === VIDEO LOGIC (Cloudinary Integration) ===
       if (!req.file) {
         return res.status(400).json({ message: "Please upload a video file." });
       }
 
-      // Construct the file path (Assuming you are using local storage)
-      // If you are using Cloudinary/S3, use req.file.path instead
-      const videoPath = `/uploads/${req.file.filename}`;
+      // 1. Create an upload stream to Cloudinary
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          resource_type: "video", // MUST specify 'video' for mp4 files
+          folder: "learnhub/lessons", // Keeps your Cloudinary dashboard organized
+        },
+        async (error, result) => {
+          if (error) {
+            console.error("Cloudinary Upload Error:", error);
+            return res.status(500).json({ message: "Video upload failed", error: error.message });
+          }
 
-      newLesson = {
-        title,
-        type: 'video',
-        videoUrl: videoPath,
-        questions: [] // No questions for videos
-      };
+          // 2. Cloudinary succeeded! Create the lesson with the secure URL
+          const newLesson = {
+            title,
+            type: 'video',
+            videoUrl: result.secure_url, 
+            questions: [] 
+          };
+
+          // 3. Save to database
+          course.lessons.push(newLesson);
+          await course.save();
+
+          return res.status(201).json(course);
+        }
+      );
+
+      // 4. Feed the file buffer from RAM into the Cloudinary stream
+      uploadStream.end(req.file.buffer);
     }
-
-    // 5. Save to Database
-    course.lessons.push(newLesson);
-    await course.save();
-
-    res.status(201).json(course);
 
   } catch (err) {
     console.error("Error adding lesson:", err);

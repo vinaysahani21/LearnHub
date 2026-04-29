@@ -3,7 +3,10 @@ const mongoose = require('mongoose');
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
+  
+  password: { type: String },
+  googleId: { type: String }, 
+  
   role: {
     type: String,
     enum: ['student', 'tutor', 'admin'],
@@ -11,7 +14,6 @@ const userSchema = new mongoose.Schema({
   },
   profilePicture: { type: String }, 
 
-  // --- NEW FIELDS FOR TUTORS ONLY ---
   headline: { type: String }, 
   bio: { type: String },
   skills: [{ type: String }], 
@@ -21,11 +23,8 @@ const userSchema = new mongoose.Schema({
   },
 
   enrolledCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
-    completedCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
-  
-  completedLessons: [{ 
-    type: mongoose.Schema.Types.ObjectId, 
-  }]
+  completedCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
+  completedLessons: [{ type: mongoose.Schema.Types.ObjectId }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

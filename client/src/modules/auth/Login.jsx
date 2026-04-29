@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
-import axios from 'axios';
 import { useAuth } from '../../context/AuthContext.jsx';
 import api from '../../api/api';
+import { GoogleLogin } from '@react-oauth/google';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -22,24 +22,62 @@ const Login = () => {
     setError(''); 
   };
 
+  // --- HELPER: ROLE-BASED ROUTING ---
+  const routeUser = (role) => {
+    if (role === 'admin') navigate('/admin/dashboard');
+    else if (role === 'tutor') navigate('/tutor/dashboard');
+    else navigate('/student/dashboard');
+  };
+
+  // --- HELPER: ERROR HANDLING (MAINTENANCE / SUSPENDED) ---
+  const handleAuthError = (err) => {
+    const status = err.response?.status;
+    if (status === 503) {
+      navigate('/maintenance');
+    } else if (status === 403) {
+      navigate('/suspended');
+    } else {
+      setError(err.response?.data?.message || 'Invalid credentials');
+    }
+  };
+
+  // --- STANDARD EMAIL/PASSWORD LOGIN ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
+      // Using your custom API instance (which should have withCredentials: true configured)
       const res = await api.post('/auth/login', formData);
-      const { token, user } = res.data;
+      const { user } = res.data; // Notice: No token extracted, cookies handle it now!
       
-      login(user, token); 
-
-      if (user.role === 'admin') navigate('/admin/dashboard');
-      else if (user.role === 'tutor') navigate('/tutor/dashboard');
-      else navigate('/student/dashboard'); 
-
+      login(user); 
+      routeUser(user.role);
     } catch (err) {
       console.error(err);
-      setError(err.response?.data?.message || 'Invalid credentials');
+      handleAuthError(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- GOOGLE LOGIN SUCCESS HANDLER ---
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      const res = await api.post('/auth/google-login', {
+        credential: credentialResponse.credential
+      });
+      
+      const { user } = res.data;
+      login(user);
+      routeUser(user.role);
+    } catch (err) {
+      console.error("Google Auth Error:", err);
+      handleAuthError(err);
     } finally {
       setLoading(false);
     }
@@ -47,7 +85,7 @@ const Login = () => {
 
   return (
     <div>
-      <div className="mb-10">
+      <div className="mb-10 text-center sm:text-left">
         <h2 className="text-4xl font-black text-slate-900 tracking-tight">Welcome back</h2>
         <p className="mt-3 text-sm text-slate-500 font-medium">
           New to the platform?{' '}
@@ -64,6 +102,30 @@ const Login = () => {
         </div>
       )}
 
+      {/* --- SLEEK GOOGLE LOGIN BUTTON --- */}
+      <div className="mb-6 flex justify-center w-full">
+        <GoogleLogin
+          onSuccess={handleGoogleSuccess}
+          onError={() => setError('Google sign-in was unsuccessful. Please try again.')}
+          theme="outline"
+          shape="pill"
+          size="large"
+          text="continue_with"
+          width="100%"
+          logo_alignment="center"
+        />
+      </div>
+
+      {/* --- DIVIDER --- */}
+      <div className="relative flex items-center py-2 mb-6">
+        <div className="flex-grow border-t border-slate-200"></div>
+        <span className="flex-shrink-0 mx-4 text-slate-400 text-[10px] font-black uppercase tracking-widest">
+          Or login with email
+        </span>
+        <div className="flex-grow border-t border-slate-200"></div>
+      </div>
+
+      {/* --- EMAIL/PASSWORD FORM --- */}
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Email Address</label>

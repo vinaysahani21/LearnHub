@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import api from '../api/api';
 
 // 🔥 VITAL: Tells Axios to send HTTP-Only cookies with every request
 axios.defaults.withCredentials = true; 
@@ -14,7 +15,7 @@ export const AuthProvider = ({ children }) => {
     const verifyUser = async () => {
       try {
         // Ping the backend. If the HTTP-Only cookie is valid, this returns the user.
-        const res = await axios.get(`${API_URL}/auth/me`);
+        const res = await api.get(`/auth/me`);
         setUser(res.data);
       } catch (err) {
         setUser(null); // No valid cookie found
@@ -33,7 +34,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await axios.post(`${API_URL}/auth/logout`);
+      await api.post(`/auth/logout`);
     } catch (err) {
       console.error("Logout failed", err);
     } finally {
