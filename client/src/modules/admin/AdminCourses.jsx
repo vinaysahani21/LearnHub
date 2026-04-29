@@ -6,6 +6,7 @@ import {
   Ban, Clock, IndianRupee 
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import api from '../../api/api';
 
 const ContentModeration = () => {
   const [courses, setCourses] = useState([]);
@@ -23,7 +24,7 @@ const ContentModeration = () => {
       try {
         const token = localStorage.getItem('token');
         const config = { headers: { Authorization: `Bearer ${token}` } };
-        const res = await axios.get('http://localhost:5000/api/admin/courses', config);
+        const res = await api.get('/admin/courses', config);
         setCourses(res.data);
       } catch (err) {
         console.error("Failed to fetch courses", err);
@@ -41,7 +42,7 @@ const ContentModeration = () => {
     try {
       const token = localStorage.getItem('token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.delete(`http://localhost:5000/api/admin/courses/${courseId}`, config);
+      await api.delete(`/admin/courses/${courseId}`, config);
       setCourses(courses.filter(c => c._id !== courseId));
     } catch (err) {
       alert("Failed to delete course. Check console.");

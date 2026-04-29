@@ -4,6 +4,7 @@ import {
   Users, Search, Mail, BookOpen, 
   IndianRupee, Calendar, Star, ChevronRight 
 } from 'lucide-react';
+import api from '../../api/api';
 
 const MyStudents = () => {
   const [students, setStudents] = useState([]);
@@ -14,7 +15,7 @@ const MyStudents = () => {
     const fetchStudents = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await axios.get('http://localhost:5000/api/tutor/students', {
+        const res = await api.get('/tutor/students', {
           headers: { Authorization: `Bearer ${token}` }
         });
         setStudents(res.data);

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, Briefcase, Award, ArrowRight, Loader2, CheckCircle, Rocket } from 'lucide-react';
+import { Mail, Lock, User, Briefcase, Award, ArrowRight, Loader2, CheckCircle, Sparkles } from 'lucide-react';
 import axios from 'axios';
+import api from '../../api/api';
 
 const TutorRegister = () => {
   const navigate = useNavigate();
@@ -31,8 +32,8 @@ const TutorRegister = () => {
         skills: formData.skills.split(',').map(skill => skill.trim())
       };
 
-      await axios.post('http://localhost:5000/api/auth/register', formattedData);
-      
+      await api.post('/auth/register', formattedData);
+
       alert('Application Received! Welcome to the Instructor Team.');
       navigate('/auth/login');
     } catch (err) {
@@ -55,7 +56,7 @@ const TutorRegister = () => {
         <div className="relative z-10">
           <Link to="/" className="flex items-center gap-2 mb-12">
             <div className="bg-indigo-600 p-1.5 rounded-lg">
-              <Rocket className="text-white w-5 h-5" />
+              <Sparkles className="text-white w-5 h-5" />
             </div>
             <span className="text-xl font-bold tracking-tight">LearnHub</span>
           </Link>

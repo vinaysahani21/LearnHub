@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { User, Mail, Save, Loader2, Camera, Briefcase, Award, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
+import api from '../../api/api.js';
 
 const TutorProfile = () => {
   const { user, login } = useAuth(); 
@@ -41,7 +42,7 @@ const TutorProfile = () => {
       const token = localStorage.getItem('token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
-      const res = await axios.put('http://localhost:5000/api/auth/profile', formData, config);
+      const res = await api.put('/auth/profile', formData, config);
       
       login(res.data, token);
       setSuccess(true);

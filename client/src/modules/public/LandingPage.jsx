@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ArrowRight, Play, Zap, Users, Shield, Loader2, Star, Clock, ArrowUpRight, Sparkles } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import api from '../../api/api';
 
 const HERO_IMAGE = "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1471&q=80";
 
@@ -13,7 +14,7 @@ const LandingPage = () => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/courses');
+        const res = await api.get('/courses');
         setCourses(res.data.filter(c => c.isActive !== false));
       } catch (err) {
         console.error("Error fetching courses:", err);

@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx'; 
 import { useTheme } from '../../context/ThemeContext.jsx'; 
+import api from '../../api/api.js';
 
 const AdminLayout = () => {
   const location = useLocation();
@@ -56,7 +57,7 @@ const AdminLayout = () => {
     try {
       const token = localStorage.getItem('token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      const res = await axios.get('http://localhost:5000/api/admin/notifications', config);
+      const res = await api.get('/admin/notifications', config);
       setNotifications(res.data);
     } catch (err) {
       console.error("Failed to fetch notifications");
@@ -67,7 +68,7 @@ const AdminLayout = () => {
     try {
       const token = localStorage.getItem('token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.patch('http://localhost:5000/api/admin/notifications/read-all', {}, config);
+      await api.patch('/admin/notifications/read-all', {}, config);
       setNotifications(notifications.map(n => ({ ...n, isRead: true })));
     } catch (err) {
       console.error("Failed to mark notifications as read");

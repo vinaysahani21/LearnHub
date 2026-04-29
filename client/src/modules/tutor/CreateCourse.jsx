@@ -2,6 +2,7 @@ import { Upload, X, Loader2, Image as ImageIcon, BookOpen, Tag, IndianRupee, Spa
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import api from '../../api/api';
 
 const CreateCourse = () => {
   const navigate = useNavigate();
@@ -21,7 +22,7 @@ const CreateCourse = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/admin/categories');
+        const res = await api.get('/admin/categories');
         setCategories(res.data);
         if (res.data.length > 0) {
           setFormData(prev => ({ ...prev, category: res.data[0].name }));
@@ -68,7 +69,7 @@ const CreateCourse = () => {
         }
       };
 
-      await axios.post('http://localhost:5000/api/courses', data, config);
+      await api.post('/courses', data, config);
       navigate(-1); 
     } catch (err) {
       console.error(err);

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash, CheckCircle } from 'lucide-react';
+import api from '../../api/api';
 
-// 🔥 ADDED: initialData prop so EditLesson can load existing questions!
 const QuizCreator = ({ onQuizChange, initialData = [] }) => {
   const [questions, setQuestions] = useState([
     { question: '', options: ['', '', '', ''], correctAnswer: 0 }

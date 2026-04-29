@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext.jsx';
+import api from '../../api/api';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -27,14 +28,14 @@ const Login = () => {
     setError('');
 
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/login', formData);
+      const res = await api.post('/auth/login', formData);
       const { token, user } = res.data;
       
       login(user, token); 
 
       if (user.role === 'admin') navigate('/admin/dashboard');
       else if (user.role === 'tutor') navigate('/tutor/dashboard');
-      else navigate('/student/dashboard'); // Send to their showroom
+      else navigate('/student/dashboard'); 
 
     } catch (err) {
       console.error(err);

@@ -6,6 +6,7 @@ import {
   Activity, ArrowRight, ShieldCheck, Clock, 
   TrendingUp, Wallet, Settings
 } from 'lucide-react';
+import api from '../../api/api';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
@@ -26,8 +27,8 @@ const AdminDashboard = () => {
         const config = { headers: { Authorization: `Bearer ${token}` } };
 
         const [statsRes, usersRes] = await Promise.all([
-          axios.get('http://localhost:5000/api/admin/stats', config),
-          axios.get('http://localhost:5000/api/admin/users', config)
+          api.get('/admin/stats', config),
+          api.get('/admin/users', config)
         ]);
 
         // console.log("Admin Stats:", statsRes.data);

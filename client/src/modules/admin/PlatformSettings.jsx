@@ -5,14 +5,23 @@ import {
   Percent, Loader2, AlertTriangle, CheckCircle2,
   ShieldCheck, Globe, Zap, AlertCircle, FileCheck, Mail
 } from 'lucide-react';
+import api from '../../api/api';
+
+// const AlertTriangle = (props) => (
+//   <svg viewBox="0 0 24 24" fill="none" {...props}>
+//     <path d="M12 2L22 20H2L12 2Z" fill="currentColor" />
+//     <path d="M12 8V12" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+//     <path d="M12 16H12.01" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+//   </svg>
+// );
 
 const PlatformSettings = () => {
   const [settings, setSettings] = useState({
     maintenanceMode: false,
     allowTutorRegistrations: true,
     platformFeePercentage: 10,
-    autoApproveCourses: false, // 🔥 NEW: Require manual admin review for courses?
-    supportEmail: 'support@learnhub.com' // 🔥 NEW: Global contact routing
+    autoApproveCourses: false, 
+    supportEmail: 'support@learnhub.com' 
   });
   
   const [loading, setLoading] = useState(true);
@@ -26,7 +35,7 @@ const PlatformSettings = () => {
   const fetchSettings = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/admin/settings', {
+      const res = await api.get('/admin/settings', {
         headers: { Authorization: `Bearer ${token}` }
       });
       // Merge fetched settings with our defaults in case backend doesn't have the new fields yet
@@ -43,7 +52,7 @@ const PlatformSettings = () => {
     setMessage(null);
     try {
       const token = localStorage.getItem('token');
-      await axios.put('http://localhost:5000/api/admin/settings', settings, {
+      await api.put('/admin/settings', settings, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setMessage({ type: 'success', text: 'Global configuration synced successfully.' });

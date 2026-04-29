@@ -5,6 +5,7 @@ import {
   CheckCircle, XCircle, Loader2, Landmark, 
   CreditCard, X, ShieldCheck, ChevronRight, TrendingUp
 } from 'lucide-react';
+import api from '../../api/api';
 
 const TutorPayouts = () => {
   const [data, setData] = useState({ balance: 0, totalEarned: 0, totalWithdrawn: 0, history: [] });
@@ -22,7 +23,7 @@ const TutorPayouts = () => {
   const fetchPayoutData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/tutor/payouts', {
+      const res = await api.get('/tutor/payouts', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setData(res.data);
@@ -44,7 +45,7 @@ const TutorPayouts = () => {
     setRequestLoading(true);
     try {
       const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5000/api/tutor/payouts', formData, {
+      await api.post('/tutor/payouts', formData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       

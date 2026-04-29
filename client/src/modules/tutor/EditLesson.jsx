@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Video, Loader2, ArrowLeft, CheckCircle, ListChecks, Upload, Save, AlertCircle } from 'lucide-react';
 import QuizCreator from './QuizCreator.jsx';
+import api from '../../api/api';
 
 const EditLesson = () => {
   const { courseId, lessonId } = useParams();
@@ -25,7 +26,7 @@ const EditLesson = () => {
         const token = localStorage.getItem('token');
         const config = { headers: { Authorization: `Bearer ${token}` } };
         
-        const res = await axios.get(`http://localhost:5000/api/courses/${courseId}`, config);
+        const res = await api.get(`/courses/${courseId}`, config);
         const course = res.data;
         const lesson = course.lessons.find(l => l._id === lessonId);
 
@@ -66,12 +67,12 @@ const EditLesson = () => {
         // Only append video if they uploaded a replacement
         if (videoFile) formData.append('video', videoFile); 
         
-        await axios.put(`http://localhost:5000/api/courses/${courseId}/lessons/${lessonId}`, formData, {
+        await api.put(`/courses/${courseId}/lessons/${lessonId}`, formData, {
            headers: { ...config.headers, 'Content-Type': 'multipart/form-data' }
         });
       } else {
         const payload = { title, type: 'quiz', questions: quizData };
-        await axios.put(`http://localhost:5000/api/courses/${courseId}/lessons/${lessonId}`, payload, config);
+        await api.put(`/courses/${courseId}/lessons/${lessonId}`, payload, config);
       }
 
       navigate(-1); 

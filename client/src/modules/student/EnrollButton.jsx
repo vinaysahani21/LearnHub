@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, CreditCard, BookOpen } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
+import api from '../../api/api';
 
 // --- HELPER TO LOAD SCRIPT MANUALLY ---
 const loadScript = (src) => {
@@ -25,7 +26,7 @@ const EnrollButton = ({ course }) => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      await axios.post(`http://localhost:5000/api/courses/${course._id}/enroll`, {}, {
+      await api.post(`/courses/${course._id}/enroll`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       alert("Enrolled Successfully!");
@@ -54,7 +55,7 @@ const EnrollButton = ({ course }) => {
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
       // B. Create Order
-      const orderRes = await axios.post('http://localhost:5000/api/payment/create-order', 
+      const orderRes = await api.post('/payment/create-order', 
         { courseId: course._id, amount: course.price }, 
         config
       );
@@ -71,7 +72,7 @@ const EnrollButton = ({ course }) => {
         order_id: order_id,
         handler: async function (response) {
           try {
-            await axios.post('http://localhost:5000/api/payment/verify', {
+            await api.post('/payment/verify', {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,

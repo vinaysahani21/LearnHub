@@ -1,4 +1,8 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
+
+// 🔥 VITAL: Tells Axios to send HTTP-Only cookies with every request
+axios.defaults.withCredentials = true; 
 
 const AuthContext = createContext();
 
@@ -7,30 +11,34 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Check LocalStorage on App Start
-    const storedUser = localStorage.getItem('user');
-    const token = localStorage.getItem('token');
+    const verifyUser = async () => {
+      try {
+        // Ping the backend. If the HTTP-Only cookie is valid, this returns the user.
+        const res = await axios.get(`${API_URL}/auth/me`);
+        setUser(res.data);
+      } catch (err) {
+        setUser(null); // No valid cookie found
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    if (storedUser && token) {
-      setUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
+    verifyUser();
   }, []);
 
-  // 2. Login Function (Updates State & Storage)
-  const login = (userData, token) => {
-    localStorage.setItem('user', JSON.stringify(userData));
-    localStorage.setItem('token', token);
+  const login = (userData) => {
+    // We no longer manually store the token. The browser handles the cookie automatically!
     setUser(userData);
   };
 
-  // 3. Logout Function (Clears State & Storage)
-  const logout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    localStorage.removeItem('theme'); 
-    setUser(null);
-    // Optional: Redirect to home is handled by the component calling logout
+  const logout = async () => {
+    try {
+      await axios.post(`${API_URL}/auth/logout`);
+    } catch (err) {
+      console.error("Logout failed", err);
+    } finally {
+      setUser(null);
+    }
   };
 
   return (
@@ -40,5 +48,4 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// Custom Hook for easy access
 export const useAuth = () => useContext(AuthContext);

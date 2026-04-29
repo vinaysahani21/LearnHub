@@ -5,6 +5,7 @@ import {
   Plus, Search, BookOpen, Users, 
   Edit2, IndianRupee, Video, AlertCircle, Sparkles 
 } from 'lucide-react';
+import api from '../../api/api';
 
 const MyContent = () => {
   const [courses, setCourses] = useState([]);
@@ -22,7 +23,7 @@ const MyContent = () => {
       const token = localStorage.getItem('token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       
-      const res = await axios.get('http://localhost:5000/api/courses/my-courses', config);
+      const res = await api.get('/courses/my-courses', config);
       setCourses(res.data);
       setError(null);
     } catch (err) {

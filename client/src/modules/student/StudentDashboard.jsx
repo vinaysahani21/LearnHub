@@ -6,6 +6,7 @@ import {
   Zap, Sparkles, ChevronRight, Play
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
+import api from '../../api/api';
 
 const StudentDashboard = () => {
   const { user } = useAuth();
@@ -20,7 +21,7 @@ const StudentDashboard = () => {
         const token = localStorage.getItem('token');
         const config = { headers: { Authorization: `Bearer ${token}` } };
         
-        const res = await axios.get('http://localhost:5000/api/student/dashboard-data', config);
+        const res = await api.get('/student/dashboard-data', config);
         setDashboardData(res.data);
       } catch (err) {
         console.error("Failed to load dashboard data", err);

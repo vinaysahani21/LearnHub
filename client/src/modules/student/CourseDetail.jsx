@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import EnrollButton from './EnrollButton.jsx';
+import api from '../../api/api';
 
 const CourseDetail = () => {
   const { id } = useParams();
@@ -23,7 +24,7 @@ const CourseDetail = () => {
     const fetchCourseData = async () => {
       try {
         // 1. Fetch Course Data (Public)
-        const courseRes = await axios.get(`http://localhost:5000/api/courses/${id}`);
+        const courseRes = await api.get(`/courses/${id}`);
         const fetchedCourse = courseRes.data;
         setCourse(fetchedCourse);
 
@@ -38,7 +39,7 @@ const CourseDetail = () => {
         if (token && fetchedCourse.lessons?.length > 0) {
           const firstLessonId = fetchedCourse.lessons[0]._id;
           try {
-            const commentsRes = await axios.get(`http://localhost:5000/api/courses/${id}/lessons/${firstLessonId}/comments`, {
+            const commentsRes = await api.get(`/courses/${id}/lessons/${firstLessonId}/comments`, {
               headers: { Authorization: `Bearer ${token}` }
             });
             setComments(commentsRes.data);

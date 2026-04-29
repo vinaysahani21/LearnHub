@@ -5,6 +5,7 @@ import {
   IndianRupee, FileText, TrendingUp, ShoppingBag, 
   Percent, ArrowUpRight, Search, Filter, Ban
 } from 'lucide-react';
+import api from '../../api/api';
 
 const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
@@ -22,7 +23,7 @@ const AdminOrders = () => {
     try {
       const token = localStorage.getItem('token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      const res = await axios.get('http://localhost:5000/api/admin/orders', config);
+      const res = await api.get('/admin/orders', config);
       setOrders(res.data);
     } catch (err) {
       console.error("Failed to fetch orders", err);

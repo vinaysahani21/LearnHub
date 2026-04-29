@@ -5,6 +5,7 @@ import {
   Loader2, IndianRupee, CreditCard, Calendar,
   ArrowUpRight, AlertCircle, Search, Filter, Download
 } from 'lucide-react';
+import api from '../../api/api';
 
 const PayoutManagement = () => {
   const [payouts, setPayouts] = useState([]);
@@ -22,7 +23,7 @@ const PayoutManagement = () => {
   const fetchPayouts = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/admin/payouts', {
+      const res = await api.get('/admin/payouts', {
         headers: { Authorization: `Bearer ${token}` }
       });
       // Sort so newest requested are at the top
@@ -42,7 +43,7 @@ const PayoutManagement = () => {
     setProcessingId(id);
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.put(`http://localhost:5000/api/admin/payouts/${id}`, 
+      const res = await api.put(`/admin/payouts/${id}`, 
         { status }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );

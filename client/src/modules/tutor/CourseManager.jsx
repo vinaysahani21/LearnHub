@@ -6,6 +6,7 @@ import {
   Trash2, Edit2, Users, BookOpen, IndianRupee, AlertCircle,
   Eye, Power, MessageSquare, X, Send, RefreshCw, GripVertical, Loader2
 } from 'lucide-react';
+import api from '../../api/api';
 
 const CourseManager = () => {
   const { id } = useParams();
@@ -25,8 +26,8 @@ const CourseManager = () => {
       const config = { headers: { Authorization: `Bearer ${token}` } };
       
       const [courseRes, statsRes] = await Promise.all([
-        axios.get(`http://localhost:5000/api/courses/${id}`, config),
-        axios.get(`http://localhost:5000/api/tutor/course/${id}/stats`, config)
+        api.get(`/courses/${id}`, config),
+        api.get(`/tutor/course/${id}/stats`, config)
       ]);
       
       setCourse(courseRes.data);
@@ -50,7 +51,7 @@ const CourseManager = () => {
     try {
       const token = localStorage.getItem('token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      const res = await axios.patch(`http://localhost:5000/api/courses/${id}/status`, {}, config);
+      const res = await api.patch(`/courses/${id}/status`, {}, config);
       setCourse({ ...course, isActive: res.data.isActive });
     } catch (err) {
       alert("Failed to update status. Please try again.");
@@ -64,7 +65,7 @@ const CourseManager = () => {
       const token = localStorage.getItem('token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       
-      await axios.delete(`http://localhost:5000/api/courses/${id}/lessons/${lessonId}`, config);
+      await api.delete(`/courses/${id}/lessons/${lessonId}`, config);
       
       const updatedLessons = course.lessons.filter(l => l._id !== lessonId);
       setCourse({ ...course, lessons: updatedLessons });
@@ -85,7 +86,7 @@ const CourseManager = () => {
         return;
       }
 
-      const res = await axios.get(`http://localhost:5000/api/courses/${id}/lessons/${targetLessonId}/comments`, {
+      const res = await api.get(`/courses/${id}/lessons/${targetLessonId}/comments`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setComments(res.data);

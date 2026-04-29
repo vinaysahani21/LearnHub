@@ -5,6 +5,7 @@ import {
   ArrowLeft, ListChecks, ShieldCheck,
   ChevronRight, MonitorPlay, Clock
 } from 'lucide-react';
+import api from '../../api/api';
 
 const TutorCoursePreview = () => {
   const { id } = useParams();
@@ -21,7 +22,7 @@ const TutorCoursePreview = () => {
     try {
       const token = localStorage.getItem('token');
       // Tutors can use the standard course fetch endpoint
-      const res = await axios.get(`http://localhost:5000/api/courses/${id}`, {
+      const res = await api.get(`/courses/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setCourse(res.data);

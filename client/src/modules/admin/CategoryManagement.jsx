@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Tags, Plus, Trash2, BookOpen, Hexagon, ArrowRight, Search, Hash } from 'lucide-react';
+import api from '../../api/api';
 
 const CategoryManagement = () => {
   const [categories, setCategories] = useState([]);
@@ -18,7 +19,7 @@ const CategoryManagement = () => {
 
   const fetchCategories = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/admin/categories');
+      const res = await api.get('/admin/categories');
       setCategories(res.data);
     } catch (err) {
       console.error("Failed to fetch categories", err);
@@ -34,7 +35,7 @@ const CategoryManagement = () => {
     setAdding(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.post('http://localhost:5000/api/admin/categories', 
+      const res = await api.post('/admin/categories', 
         { name, description },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -55,7 +56,7 @@ const CategoryManagement = () => {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/admin/categories/${id}`, {
+      await api.delete(`/admin/categories/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setCategories(categories.filter(c => c._id !== id));

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useTheme } from '../../context/ThemeContext.jsx';
+import api from '../../api/api';
 
 const TutorLayout = () => {
   const location = useLocation();
@@ -55,7 +56,7 @@ const TutorLayout = () => {
     try {
       const token = localStorage.getItem('token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      const res = await axios.get('http://localhost:5000/api/tutor/notifications', config);
+      const res = await api.get('/tutor/notifications', config);
       setNotifications(res.data);
     } catch (err) {
       console.error("Failed to fetch notifications");
@@ -66,7 +67,7 @@ const TutorLayout = () => {
     try {
       const token = localStorage.getItem('token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.patch('http://localhost:5000/api/tutor/notifications/read-all', {}, config);
+      await api.patch('/tutor/notifications/read-all', {}, config);
       
       setNotifications(notifications.map(n => ({ ...n, isRead: true })));
     } catch (err) {

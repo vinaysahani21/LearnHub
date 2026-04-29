@@ -5,6 +5,7 @@ import {
   ArrowLeft, PlayCircle, ListChecks, HelpCircle, ShieldAlert,
   ChevronRight, MonitorPlay, Clock
 } from 'lucide-react';
+import api from '../../api/api';
 
 const AdminCoursePreview = () => {
   const { id } = useParams();
@@ -20,7 +21,7 @@ const AdminCoursePreview = () => {
   const fetchCourse = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get(`http://localhost:5000/api/admin/courses/${id}`, {
+      const res = await api.get(`/admin/courses/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setCourse(res.data);

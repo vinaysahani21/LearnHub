@@ -4,6 +4,7 @@ import {
   BarChart3, TrendingUp, IndianRupee, Users, 
   BookOpen, Star, ArrowUpRight, Award, AlertCircle
 } from 'lucide-react';
+import api from '../../api/api';
 
 const TutorAnalytics = () => {
   const [loading, setLoading] = useState(true);
@@ -20,7 +21,7 @@ const TutorAnalytics = () => {
       try {
         setLoading(true);
         const token = localStorage.getItem('token');
-        const res = await axios.get('http://localhost:5000/api/tutor/dashboard-data', {
+        const res = await api.get('/tutor/dashboard-data', {
           headers: { Authorization: `Bearer ${token}` }
         });
         

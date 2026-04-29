@@ -5,11 +5,12 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { Loader2, Download, ArrowLeft, ShieldCheck, Award } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
+import api from '../../api/api';
 
 const CourseCertificate = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const location = useLocation(); // 🔥 Added to read URL parameters
+  const location = useLocation(); 
   const { user } = useAuth();
   const certificateRef = useRef(null);
 
@@ -30,8 +31,8 @@ const CourseCertificate = () => {
         const config = { headers: { Authorization: `Bearer ${token}` } };
 
         const [courseRes, progressRes] = await Promise.all([
-          axios.get(`http://localhost:5000/api/courses/${id}`, config),
-          axios.get(`http://localhost:5000/api/progress/${id}`, config)
+          api.get(`/courses/${id}`),
+          api.get(`/progress/${id}`)
         ]);
 
         const totalLessons = courseRes.data.lessons?.length || 1;

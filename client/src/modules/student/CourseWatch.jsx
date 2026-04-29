@@ -5,6 +5,7 @@ import {
   PlayCircle, CheckCircle, ArrowLeft, Loader2, MessageSquare, 
   Send, User, ListChecks, XCircle, Save, MonitorPlay, Clock
 } from 'lucide-react';
+import api from '../../api/api';
 
 const CourseWatch = () => {
   const { id } = useParams(); 
@@ -37,8 +38,8 @@ const CourseWatch = () => {
         const config = { headers: { Authorization: `Bearer ${token}` } };
 
         const [courseRes, progressRes] = await Promise.all([
-          axios.get(`http://localhost:5000/api/courses/${id}`, config),
-          axios.get(`http://localhost:5000/api/progress/${id}`, config).catch(() => ({ data: { completedLessons: [] } }))
+          api.get(`/courses/${id}`),
+          api.get(`/progress/${id}`).catch(() => ({ data: { completedLessons: [] } }))
         ]);
 
         setCourse(courseRes.data);
@@ -72,7 +73,7 @@ const CourseWatch = () => {
     const fetchComments = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await axios.get(`http://localhost:5000/api/courses/${id}/lessons/${currentLesson._id}/comments`, {
+        const res = await api.get(`/courses/${id}/lessons/${currentLesson._id}/comments`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setComments(res.data);
@@ -99,7 +100,7 @@ const CourseWatch = () => {
     setCompletedLessons((prev) => [...prev, currentLesson._id]);
     try {
       const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5000/api/progress/mark-complete', 
+      await api.post('/progress/mark-complete', 
         { courseId: id, lessonId: currentLesson._id },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -134,7 +135,7 @@ const CourseWatch = () => {
     if (!newComment.trim()) return;
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.post(`http://localhost:5000/api/courses/${id}/lessons/${currentLesson._id}/comments`, 
+      const res = await api.post(`/courses/${id}/lessons/${currentLesson._id}/comments`, 
         { text: newComment }, { headers: { Authorization: `Bearer ${token}` } }
       );
       setComments([res.data, ...comments]);

@@ -4,6 +4,7 @@ import {
   DollarSign, Users, BookOpen, TrendingUp, 
   IndianRupee, Star, ArrowUpRight, Clock, AlertCircle
 } from 'lucide-react';
+import api from '../../api/api';
 
 const TutorDashboard = () => {
   const [data, setData] = useState(null);
@@ -15,7 +16,7 @@ const TutorDashboard = () => {
       try {
         setLoading(true);
         const token = localStorage.getItem('token');
-        const res = await axios.get('http://localhost:5000/api/tutor/dashboard-data', {
+        const res = await api.get('/tutor/dashboard-data', {
           headers: { Authorization: `Bearer ${token}` }
         });
         setData(res.data);

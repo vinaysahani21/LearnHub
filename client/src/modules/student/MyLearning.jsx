@@ -14,6 +14,7 @@ import {
   Download,
   X
 } from "lucide-react";
+import api from "../../api/api";
 
 const MyLearning = () => {
   const [courses, setCourses] = useState([]);
@@ -34,8 +35,8 @@ const MyLearning = () => {
         const config = { headers: { Authorization: `Bearer ${token}` } };
 
         const [coursesRes, progressRes] = await Promise.all([
-          axios.get("http://localhost:5000/api/auth/me", config),
-          axios.get("http://localhost:5000/api/progress/all", config),
+          api.get("/auth/me", config),
+          api.get("/progress/all", config),
         ]);
 
         setCourses(coursesRes.data.enrolledCourses || []);

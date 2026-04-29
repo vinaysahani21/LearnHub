@@ -5,7 +5,8 @@ import {
   Search, Loader2, Compass, Filter, X, SlidersHorizontal, 
   Play, Star, ChevronRight, Zap, IndianRupee
 } from 'lucide-react';
-import CourseCard from '../../common/CourseCard'; // Assuming you have this!
+import CourseCard from '../../common/CourseCard'; 
+import api from '../../api/api';
 
 const ExploreCourses = () => {
   const [courses, setCourses] = useState([]);
@@ -21,8 +22,8 @@ const ExploreCourses = () => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        // Fetching only active/published courses (Assuming backend handles this, or we filter here)
-        const res = await axios.get('http://localhost:5000/api/courses');
+        // Fetching only active/published courses 
+        const res = await api.get('/courses');
         const activeCourses = res.data.filter(c => c.isActive !== false);
         setCourses(activeCourses);
       } catch (err) {

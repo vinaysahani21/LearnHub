@@ -5,6 +5,7 @@ import {
   Award, Clock, GraduationCap, Camera, CheckCircle2 
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
+import api from '../../api/api';
 
 
 const StudentProfile = () => {
@@ -19,7 +20,7 @@ const StudentProfile = () => {
     email: '',
     bio: '',
     skills: '',
-    profilePic: '' // Added profilePic to form data
+    profilePic: '' 
   });
 
   useEffect(() => {
@@ -37,7 +38,7 @@ const StudentProfile = () => {
       try {
         const token = localStorage.getItem('token');
         const config = { headers: { Authorization: `Bearer ${token}` } };
-        const res = await axios.get('http://localhost:5000/api/student/dashboard-data', config);
+        const res = await api.get('/student/dashboard-data', config);
         
         setRealStats({
           enrolled: res.data.stats.activeCourses + res.data.stats.completedCourses,
@@ -78,7 +79,7 @@ const StudentProfile = () => {
       };
       
       // Hit your upload endpoint
-      const res = await axios.post('http://localhost:5000/api/student/upload', uploadData, config);
+      const res = await api.post('/student/upload', uploadData, config);
       
       // Update form data so it previews immediately (User still needs to click Save to persist to DB)
       setFormData(prev => ({ ...prev, profilePic: res.data.url }));
@@ -99,7 +100,7 @@ const StudentProfile = () => {
       const token = localStorage.getItem('token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       
-      const res = await axios.put('http://localhost:5000/api/auth/profile', formData, config);
+      const res = await api.put('/auth/profile', formData, config);
       login(res.data, token); 
       
       setSuccess(true);

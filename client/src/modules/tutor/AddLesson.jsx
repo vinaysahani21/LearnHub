@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Video, Loader2, ArrowLeft, Plus, CheckCircle, ListChecks, Upload } from 'lucide-react';
 import QuizCreator from './QuizCreator.jsx';
+import api from '../../api/api';
 
 const AddLesson = () => {
   const { id } = useParams();
@@ -28,12 +29,12 @@ const AddLesson = () => {
         formData.append('type', 'video');
         if (videoFile) formData.append('video', videoFile);
         
-        await axios.post(`http://localhost:5000/api/courses/${id}/lessons`, formData, {
+        await api.post(`/courses/${id}/lessons`, formData, {
            headers: { ...config.headers, 'Content-Type': 'multipart/form-data' }
         });
       } else {
         const payload = { title, type: 'quiz', questions: quizData };
-        await axios.post(`http://localhost:5000/api/courses/${id}/lessons`, payload, config);
+        await api.post(`/courses/${id}/lessons`, payload, config);
       }
 
       navigate(-1); 

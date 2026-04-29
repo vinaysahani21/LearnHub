@@ -5,6 +5,7 @@ import {
   Presentation, Mail, Calendar, BookOpen, Ban, 
   CheckCircle2, Search, Filter, ShieldBan, Activity
 } from 'lucide-react';
+import api from '../../api/api';
 
 const UserDatabase = () => {
   const [users, setUsers] = useState([]);
@@ -23,7 +24,7 @@ const UserDatabase = () => {
       const token = localStorage.getItem('token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       
-      const res = await axios.get('http://localhost:5000/api/admin/users', config);
+      const res = await api.get('/admin/users', config);
       setUsers(res.data);
     } catch (err) {
       console.error("Failed to fetch users", err);
@@ -43,7 +44,7 @@ const UserDatabase = () => {
       const token = localStorage.getItem('token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       
-      const res = await axios.put(`http://localhost:5000/api/admin/users/${userId}/toggle-status`, {}, config);
+      const res = await api.put(`/admin/users/${userId}/toggle-status`, {}, config);
       
       setUsers(users.map(u => u._id === userId ? { ...u, isActive: res.data.isActive } : u));
     } catch (err) {
@@ -60,7 +61,7 @@ const UserDatabase = () => {
     try {
       const token = localStorage.getItem('token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.delete(`http://localhost:5000/api/admin/users/${userId}`, config);
+      await api.delete(`/admin/users/${userId}`, config);
       setUsers(users.filter(u => u._id !== userId));
     } catch (err) {
       alert("Failed to delete user.");
