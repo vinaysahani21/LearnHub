@@ -5,6 +5,10 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser'); 
 require('dotenv').config();
 
+// 🛡️ STABLE SECURITY PACKAGES
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+
 require('./models/User');  
 require('./models/Course'); 
 
@@ -19,14 +23,40 @@ const studentRoutes = require('./routes/studentRoutes');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-//   CORS must allow credentials and specify the exact frontend origin
+// 🔥 CRITICAL FOR RENDER: Tells Express to trust the Render load balancer
+app.set('trust proxy', 1);
+
+// CORS Configuration
 app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true, 
 }));
 
-app.use(express.json());
+// ==========================================
+// 🛡️ THE SECURITY SHIELD (STABLE)
+// ==========================================
+
+// 1. Set Security HTTP Headers 
+app.use(helmet({
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+
+// 2. Rate Limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 200, 
+  message: { message: "Too many requests from this IP, please try again in 15 minutes." }
+});
+app.use('/api/', limiter); 
+
+// 3. Body Parsers
+app.use(express.json({ limit: '10kb' }));
 app.use(cookieParser());
+
+// REMOVED xss-clean and express-mongo-sanitize to prevent IncomingMessage crashes
+
+// ==========================================
 
 mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/learnhub')
   .then(() => console.log('MongoDB Connected'))
@@ -43,5 +73,5 @@ app.use('/api/tutor', tutorRoutes);
 app.use('/api/student', studentRoutes);
 
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
