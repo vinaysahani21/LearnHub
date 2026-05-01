@@ -55,8 +55,6 @@ if (loading || !dashboardData) {
 }
 
 // Now it is safe to destructure because dashboardData is guaranteed to exist
-const { stats, enrolledCourses } = dashboardData;
-
   const { stats, heroCourse, recentCourses } = dashboardData;
 
   return (
