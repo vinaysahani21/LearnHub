@@ -45,6 +45,18 @@ const StudentDashboard = () => {
     );
   }
 
+  // Add this right before your return statement or destructuring!
+if (loading || !dashboardData) {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <p>Loading dashboard...</p> {/* Replace with your actual Loader component */}
+    </div>
+  );
+}
+
+// Now it is safe to destructure because dashboardData is guaranteed to exist
+const { stats, enrolledCourses } = dashboardData;
+
   const { stats, heroCourse, recentCourses } = dashboardData;
 
   return (

@@ -4,6 +4,7 @@ import {
   Megaphone, Send, Loader2, Users, AlertCircle, 
   CheckCircle2, ChevronDown, Eye, History, BellRing, Clock, ShieldAlert
 } from 'lucide-react';
+import api from '../../api/api';
 
 const AdminBroadcast = () => {
   // Tabs: 'compose' or 'history'
@@ -41,7 +42,7 @@ const AdminBroadcast = () => {
       const token = localStorage.getItem('token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       
-      const res = await axios.post(`${API_URL}/admin/broadcast`, formData, config);
+      const res = await api.post(`/admin/broadcast`, formData, config);
       
       setStatus({ type: 'success', text: res.data.message || 'Broadcast deployed successfully.' });
       setFormData({ title: '', message: '', targetRole: 'all', priority: 'normal' });
@@ -63,7 +64,7 @@ const AdminBroadcast = () => {
       const token = localStorage.getItem('token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       // Note: You will need to add this endpoint to your backend!
-      const res = await axios.get(`${API_URL}/admin/broadcast-history`, config);
+      const res = await api.get(`/admin/broadcast-history`, config);
       setBroadcastHistory(res.data);
     } catch (err) {
       console.error("Failed to fetch broadcast history", err);
