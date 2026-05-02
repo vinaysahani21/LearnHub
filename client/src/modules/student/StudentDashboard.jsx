@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { 
   PlayCircle, Clock, Award, ArrowRight, BookOpen, 
   Zap, Sparkles, ChevronRight, Play
@@ -18,10 +17,9 @@ const StudentDashboard = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const config = { headers: { Authorization: `Bearer ${token}` } };
-        
-        const res = await api.get('/student/dashboard-data', config);
+        // 🔥 Notice we don't need to manually grab the token from localStorage anymore!
+        // api.js handles sending the secure HTTP-Only cookie automatically.
+        const res = await api.get('/student/dashboard-data');
         setDashboardData(res.data);
       } catch (err) {
         console.error("Failed to load dashboard data", err);
@@ -33,6 +31,7 @@ const StudentDashboard = () => {
     fetchDashboardData();
   }, []);
 
+  // --- 1. THE ULTIMATE LOADING & SAFETY CHECK ---
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] gap-4">
@@ -45,17 +44,25 @@ const StudentDashboard = () => {
     );
   }
 
-  // Add this right before your return statement or destructuring!
-if (loading || !dashboardData) {
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      <p>Loading dashboard...</p> {/* Replace with your actual Loader component */}
-    </div>
-  );
-}
+  // --- 2. ERROR STATE (If the API completely fails) ---
+  if (!dashboardData) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[70vh] gap-4">
+        <p className="font-bold text-rose-500 tracking-widest uppercase text-sm">Failed to load dashboard.</p>
+        <button onClick={() => window.location.reload()} className="px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+          Try Again
+        </button>
+      </div>
+    );
+  }
 
-// Now it is safe to destructure because dashboardData is guaranteed to exist
-  const { stats, heroCourse, recentCourses } = dashboardData;
+  // --- 3. BULLETPROOF DESTRUCTURING ---
+  // We provide default values so React NEVER crashes if the backend sends missing data
+  const { 
+    stats = { activeCourses: 0, completedCourses: 0, learningHours: 0 }, 
+    heroCourse = null, 
+    recentCourses = [] 
+  } = dashboardData;
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
@@ -80,9 +87,9 @@ if (loading || !dashboardData) {
 
       {/* 2. STATS GRID */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
-        <StatCard icon={<BookOpen size={24} />} value={stats.activeCourses} label="Enrolled Courses" color="sky" />
-        <StatCard icon={<Award size={24} />} value={stats.completedCourses} label="Certificates Earned" color="emerald" />
-        <StatCard icon={<Clock size={24} />} value={`~${Math.round(stats.learningHours)}h`} label="Est. Learning Time" color="indigo" />
+        <StatCard icon={<BookOpen size={24} />} value={stats.activeCourses || 0} label="Enrolled Courses" color="sky" />
+        <StatCard icon={<Award size={24} />} value={stats.completedCourses || 0} label="Certificates Earned" color="emerald" />
+        <StatCard icon={<Clock size={24} />} value={`~${Math.round(stats.learningHours || 0)}h`} label="Est. Learning Time" color="indigo" />
       </div>
 
       {/* 3. HERO SECTION (RESUME LEARNING) */}
@@ -113,10 +120,10 @@ if (loading || !dashboardData) {
               <div className="space-y-2 max-w-md">
                 <div className="flex justify-between text-xs font-black uppercase tracking-widest text-slate-300">
                   <span>Current Progress</span>
-                  <span className="text-sky-400">{heroCourse.progress}%</span>
+                  <span className="text-sky-400">{heroCourse.progress || 0}%</span>
                 </div>
                 <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden shadow-inner">
-                  <div className="bg-gradient-to-r from-sky-500 to-cyan-400 h-2 rounded-full shadow-[0_0_10px_rgba(56,189,248,0.5)]" style={{ width: `${heroCourse.progress}%` }}></div>
+                  <div className="bg-gradient-to-r from-sky-500 to-cyan-400 h-2 rounded-full shadow-[0_0_10px_rgba(56,189,248,0.5)]" style={{ width: `${heroCourse.progress || 0}%` }}></div>
                 </div>
               </div>
               
@@ -133,7 +140,7 @@ if (loading || !dashboardData) {
             {/* Right Hero Image */}
             <div className="w-full md:w-80 lg:w-96 aspect-video rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative group-hover:scale-[1.02] transition-transform duration-500 shrink-0">
               <img 
-                src={heroCourse.thumbnail} 
+                src={heroCourse.thumbnail || 'https://via.placeholder.com/600x400'} 
                 alt={heroCourse.title} 
                 className="w-full h-full object-cover"
               />
@@ -159,7 +166,7 @@ if (loading || !dashboardData) {
       )}
 
       {/* 4. RECENTLY ENROLLED LIST */}
-      {recentCourses.length > 0 && (
+      {recentCourses && recentCourses.length > 0 && (
         <div className="pb-10">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
             <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Current Curriculum</h3>
@@ -174,7 +181,7 @@ if (loading || !dashboardData) {
                 
                 <div className="h-44 overflow-hidden relative bg-slate-100 dark:bg-slate-800 shrink-0">
                   <img 
-                    src={course.thumbnail} 
+                    src={course.thumbnail || 'https://via.placeholder.com/600x400'} 
                     alt={course.title} 
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" 
                   />
@@ -190,17 +197,17 @@ if (loading || !dashboardData) {
                 </div>
                 
                 <div className="p-6 flex-1 flex flex-col">
-                  <div className="text-[9px] font-black text-sky-500 mb-2 uppercase tracking-[0.2em]">{course.category}</div>
+                  <div className="text-[9px] font-black text-sky-500 mb-2 uppercase tracking-[0.2em]">{course.category || 'General'}</div>
                   <h4 className="font-black text-slate-900 dark:text-white text-lg tracking-tight line-clamp-1 mb-1 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">{course.title}</h4>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 line-clamp-2 font-medium">{course.description}</p>
                   
                   <div className="mt-auto pt-4">
                     <div className="flex justify-between text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2">
-                      <span>{course.progress}% Completed</span>
+                      <span>{course.progress || 0}% Completed</span>
                       <span>{course.lessons?.length || 0} Modules</span>
                     </div>
                     <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
-                      <div className="bg-sky-500 h-1.5 rounded-full shadow-[0_0_10px_rgba(56,189,248,0.5)] transition-all duration-1000" style={{ width: `${course.progress}%` }}></div> 
+                      <div className="bg-sky-500 h-1.5 rounded-full shadow-[0_0_10px_rgba(56,189,248,0.5)] transition-all duration-1000" style={{ width: `${course.progress || 0}%` }}></div> 
                     </div>
                   </div>
                 </div>

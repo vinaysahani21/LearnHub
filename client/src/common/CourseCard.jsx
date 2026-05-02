@@ -3,6 +3,8 @@ import { User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const CourseCard = ({ course }) => {
+
+  // console.log('Rendering CourseCard for:', course);
   return (
     <Link 
       to={`/student/courses/${course._id}`} 
