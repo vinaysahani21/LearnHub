@@ -6,6 +6,8 @@ const { protect, tutorOnly } = require('../middleware/authMiddleware');
 const upload = require('../utils/localUpload'); 
 const Comment = require('../models/Comment'); 
 const Notification = require('../models/Notification');
+const cloudinary = require('../utils/cloudinary');
+const fs = require('fs');
 
 // 1. GET ALL PUBLIC COURSES
 router.get('/', async (req, res) => {
@@ -27,12 +29,14 @@ router.get('/my-courses', protect, tutorOnly, async (req, res) => {
   }
 });
 
-// 3. CREATE COURSE
+// 3. CREATE COURSE 
 router.post('/', protect, tutorOnly, upload.single('thumbnail'), async (req, res) => {
   try {
     let thumbnailUrl = '';
     if (req.file) {
-      thumbnailUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+      const result = await cloudinary.uploader.upload(req.file.path, { folder: "learnhub/courses", resource_type: "image" });
+      thumbnailUrl = result.secure_url;
+      fs.unlinkSync(req.file.path);
     }
 
     const newCourse = new Course({
@@ -135,13 +139,15 @@ router.post('/:id/lessons', protect, tutorOnly, upload.single('video'), async (r
         return res.status(400).json({ message: "No video file uploaded" });
       }
 
-      const fullUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+      const result = await cloudinary.uploader.upload(req.file.path, { folder: "learnhub/lessons", resource_type: "video" });
+      const fullUrl = result.secure_url;
+      fs.unlinkSync(req.file.path);
 
       course.lessons.push({
         title,
         type: 'video', 
         videoUrl: fullUrl,
-        publicId: req.file.filename,
+        publicId: result.public_id,
         questions: []
       });
     }
@@ -199,9 +205,10 @@ router.put('/:id/lessons/:lessonId', protect, tutorOnly, upload.single('video'),
     } else {
       // If it's a video, check if a NEW file was uploaded
       if (req.file) {
-        const fullUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
-        lesson.videoUrl = fullUrl;
-        lesson.publicId = req.file.filename;
+        const result = await cloudinary.uploader.upload(req.file.path, { folder: "learnhub/lessons", resource_type: "video" });
+        lesson.videoUrl = result.secure_url;
+        lesson.publicId = result.public_id;
+        fs.unlinkSync(req.file.path);
       }
       // Note: If no new file is uploaded, it simply keeps the old videoUrl!
     }

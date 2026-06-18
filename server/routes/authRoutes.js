@@ -18,10 +18,11 @@ const generateTokenAndCookie = (res, userId, role) => {
     { expiresIn: '30d' }
   );
 
+  const isProd = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
   res.cookie('token', token, {
     httpOnly: true, // Prevents XSS attacks (JS cannot read it)
-    secure: process.env.NODE_ENV === 'production', // Requires HTTPS in production
-    sameSite: 'lax',
+    secure: isProd, // Requires HTTPS in production
+    sameSite: isProd ? 'none' : 'lax', // 'none' required for cross-domain cookies
     maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
   });
 };
@@ -244,7 +245,12 @@ router.post('/google-login', async (req, res) => {
 
 // --- 5. LOGOUT ROUTE ---
 router.post('/logout', (req, res) => {
-  res.clearCookie('token'); // Destroys the HTTP-Only cookie
+  const isProd = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax',
+  }); // Destroys the HTTP-Only cookie
   res.status(200).json({ message: 'Logged out successfully' });
 });
 
